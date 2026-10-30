@@ -1,0 +1,88 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per branch or pull request. Pull request runs are replaced by newer
+# pushes; deployments from main are never cancelled half-way.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Check, test and build
+    runs-on: ubuntu-latest
+    env:
+      # A project site is served from /<repository>/. A user or organisation site
+      # (<owner>.github.io) or a custom domain is served from /: set the
+      # PAGES_BASE_PATH repository variable to override.
+      BASE_PATH: ${{ vars.PAGES_BASE_PATH || (endsWith(github.event.repository.name, '.github.io') && '/' || format('/{0}/', github.event.repository.name)) }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint and formatting
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build (base path ${{ env.BASE_PATH }})
+        run: npm run build
+
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests against the built site on its Pages subpath
+        run: npm run test:e2e
+        env:
+          E2E_SKIP_BUILD: '1'
+
+      - name: Keep browser test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results
+          retention-days: 7
+
+      - name: Upload the site for GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

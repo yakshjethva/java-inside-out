@@ -1,0 +1,51 @@
+import { useEffect, useRef } from 'react';
+import { Outlet, ScrollRestoration, useLocation, useNavigation } from 'react-router';
+import { SiteFooter } from '@/components/layout/SiteFooter';
+import { SiteHeader } from '@/components/layout/SiteHeader';
+import { usePreferences } from '@/hooks/useLearningState';
+
+/** Application shell: skip link, header, main landmark, footer. */
+export function RootLayout() {
+  const location = useLocation();
+  const navigation = useNavigation();
+  const mainRef = useRef<HTMLElement>(null);
+  const firstRender = useRef(true);
+  const { preferences } = usePreferences();
+
+  // Move focus to the main landmark after client-side navigation so screen
+  // readers start reading the new page (query-only changes keep focus).
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    if (!location.hash) mainRef.current?.focus({ preventScroll: true });
+  }, [location.pathname, location.hash]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (preferences.motion === 'system') root.removeAttribute('data-reduced-motion');
+    else root.setAttribute('data-reduced-motion', String(preferences.motion === 'reduce'));
+  }, [preferences.motion]);
+
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-exec-500 px-3 py-2 font-medium text-ink-950 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+      >
+        Skip to content
+      </a>
+      <SiteHeader />
+      <div
+        aria-hidden
+        className={`fixed top-0 left-0 z-50 h-0.5 bg-exec-400 transition-all duration-500 ${navigation.state === 'loading' ? 'w-2/3 opacity-100' : 'w-full opacity-0'}`}
+      />
+      <main id="main" ref={mainRef} tabIndex={-1} className="flex flex-1 flex-col outline-none">
+        <Outlet />
+      </main>
+      <SiteFooter />
+      <ScrollRestoration />
+    </div>
+  );
+}
