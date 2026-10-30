@@ -122,6 +122,30 @@ describe('ComponentTree', () => {
     expect(screen.getAllByRole('treeitem')).toHaveLength(1);
   });
 
+  it('stays reachable by keyboard when the selection is in a collapsed branch', () => {
+    const withCollapsedRoot: TreeItem[] = [
+      {
+        id: 'build-time',
+        name: 'Build time',
+        provenance: 'platform',
+        children: [{ id: 'class-file', name: 'Class file', provenance: 'spec', children: [] }],
+      },
+      { id: 'jvm', name: 'Java Virtual Machine', provenance: 'spec', children: [] },
+    ];
+    render(
+      <ComponentTree
+        roots={withCollapsedRoot}
+        selectedId="class-file"
+        onSelect={() => {}}
+        explored={{}}
+        filter=""
+      />,
+    );
+    const items = screen.getAllByRole('treeitem');
+    expect(items.map((el) => el.textContent)).toEqual(['Build time', 'Java Virtual Machine']);
+    expect(items.map((el) => el.tabIndex)).toEqual([0, -1]);
+  });
+
   it('filters by name', () => {
     render(
       <ComponentTree

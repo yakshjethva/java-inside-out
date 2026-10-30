@@ -97,6 +97,27 @@ test.describe('JVM anatomy explorer', () => {
     await expect(narrative.getByText('Step 5 of 10')).toBeVisible();
   });
 
+  test('the Focus button works while the camera follows a scenario', async ({ page }) => {
+    await page.goto('anatomy?mode=execution&s=new-person&c=native-libraries');
+    const canvas = page.getByRole('group', { name: 'Anatomy of the Java Virtual Machine' });
+    const node = plateNode(page, 'Native libraries');
+    const centred = async () => {
+      const [area, box] = await Promise.all([canvas.boundingBox(), node.boundingBox()]);
+      if (!area || !box) return false;
+      const dx = box.x + box.width / 2 - (area.x + area.width / 2);
+      const dy = box.y + box.height / 2 - (area.y + area.height / 2);
+      return Math.abs(dx) < area.width * 0.15 && Math.abs(dy) < area.height * 0.15;
+    };
+    await expect(page.getByText('Step 1 of 10')).toBeVisible();
+    // The camera starts on the step's components, not on the selection.
+    await expect.poll(centred).toBe(false);
+    await page.getByRole('button', { name: 'Focus' }).click();
+    await expect.poll(centred).toBe(true);
+    // The next step takes the camera back.
+    await page.getByRole('button', { name: 'Next step' }).click();
+    await expect.poll(centred).toBe(false);
+  });
+
   test('the home page plate opens a component in the explorer', async ({ page }) => {
     await page.goto('./');
     await plateNode(page, 'Interpreter').click();

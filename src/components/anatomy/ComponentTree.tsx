@@ -58,10 +58,26 @@ export function ComponentTree({
     return out;
   }, [roots, collapsed, query]);
 
+  const parents = useMemo(() => {
+    const map = new Map<string, string>();
+    const walk = (items: TreeItem[], parentId?: string) => {
+      for (const item of items) {
+        if (parentId) map.set(item.id, parentId);
+        walk(item.children, item.id);
+      }
+    };
+    walk(roots);
+    return map;
+  }, [roots]);
+  const visible = useMemo(() => new Set(flat.map((f) => f.item.id)), [flat]);
+
+  // One item always stays in the tab order: the focused item, else the selection or, when it
+  // is hidden in a collapsed branch, its nearest visible ancestor, else the first item.
+  let selectionAnchor = selectedId;
+  while (selectionAnchor && !visible.has(selectionAnchor))
+    selectionAnchor = parents.get(selectionAnchor) ?? null;
   const activeId =
-    focusedId && flat.some((f) => f.item.id === focusedId)
-      ? focusedId
-      : (selectedId ?? flat[0]?.item.id);
+    focusedId && visible.has(focusedId) ? focusedId : (selectionAnchor ?? flat[0]?.item.id);
 
   const focus = (id: string | undefined) => {
     if (!id) return;

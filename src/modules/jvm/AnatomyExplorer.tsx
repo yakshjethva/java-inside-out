@@ -36,6 +36,7 @@ import type { Provenance } from '@/types/content';
 import { AnatomyPlate, type ExecutionOverlay } from './AnatomyPlate';
 import { ExecutionPanel } from './ExecutionPanel';
 import { InternalView } from './internals/InternalView';
+import { chooseCameraFocus, type CameraFocus } from './camera';
 import { buildScene, PART_NUMBER } from './scene';
 import { useAnatomyState, type ExplorerMode } from './useAnatomyState';
 
@@ -114,7 +115,7 @@ export function AnatomyExplorer() {
   const [layersAnchor, setLayersAnchor] = useState<HTMLButtonElement | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
   const [follow, setFollow] = useState(true);
-  const [focus, setFocus] = useState<{ rect: Rect; key: string; maxZoom?: number } | null>(null);
+  const [focus, setFocus] = useState<CameraFocus | null>(null);
 
   const hiddenProvenance = useMemo(() => {
     const hidden = new Set<Provenance>();
@@ -165,7 +166,8 @@ export function AnatomyExplorer() {
       ? { rect: inflate(target, 70), key: `${scenario.id}:${currentStep.id}`, maxZoom: 1.25 }
       : null;
   }, [mode, follow, currentStep, scenario.id, scene.rects]);
-  const cameraFocus = executionFocus ?? focus;
+  const followKey = executionFocus?.key ?? null;
+  const cameraFocus = chooseCameraFocus(executionFocus, focus);
 
   // Camera: bring a newly selected component into a readable view when it is too small or off-screen.
   const ensureVisible = useCallback(
@@ -184,16 +186,18 @@ export function AnatomyExplorer() {
           rect: inflate(rect, Math.max(40, rect.w * 0.35)),
           key: `${id}:${Date.now()}`,
           maxZoom: 1.5,
+          followKey,
         });
     },
-    [scene.rects],
+    [scene.rects, followKey],
   );
 
   // A component selected through the URL is brought into view once the canvas has measured itself.
   const initialSelection = useRef(selectedId);
   useEffect(() => {
     const id = initialSelection.current;
-    if (!id || mode === 'internal') return;
+    // In execution mode the scenario step frames the camera first.
+    if (!id || mode === 'internal' || mode === 'execution') return;
     const timer = window.setTimeout(() => ensureVisible(id), 250);
     return () => window.clearTimeout(timer);
     // Only for the selection present on first render.
@@ -275,7 +279,11 @@ export function AnatomyExplorer() {
         onNavigate={navigate}
         furthest={(progress.scenarios[scenario.id] ?? 1) - 1}
         follow={follow}
-        onFollow={setFollow}
+        onFollow={(value) => {
+          setFollow(value);
+          // Turning follow off keeps the camera where it is.
+          setFocus(null);
+        }}
       />
     ) : selectedDoc && selectedId && relations ? (
       <>
