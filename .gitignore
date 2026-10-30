@@ -34,3 +34,6 @@ storage-state.json
 # Logs
 *.log
 npm-debug.log*
+
+# Local overrides
+*.local

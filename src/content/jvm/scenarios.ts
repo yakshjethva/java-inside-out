@@ -1,0 +1,763 @@
+import type { CodeListing, Scenario } from '@/types/content';
+
+const V = 'OpenJDK 25.0.4 · Linux x64';
+
+const MAIN_JAVA: CodeListing = {
+  id: 'main-java',
+  title: 'Main.java',
+  language: 'java',
+  code: `public class Main {
+    public static void main(String[] args) {
+        Person p1 = new Person("Alex");
+        Person p2 = p1;
+        System.out.println(p2.getName());
+        p1 = null;
+        p2 = null;
+    }
+}`,
+  verifiedWith: V,
+};
+
+const PERSON_JAVA: CodeListing = {
+  id: 'person-java',
+  title: 'Person.java',
+  language: 'java',
+  code: `public class Person {
+    private final String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+}`,
+  verifiedWith: V,
+};
+
+const MAIN_BYTECODE: CodeListing = {
+  id: 'main-bytecode',
+  title: 'javap -c Main · main(String[])',
+  language: 'text',
+  code: ` 0: new           #7                  // class Person
+ 3: dup
+ 4: ldc           #9                  // String Alex
+ 6: invokespecial #11                 // Method Person."<init>":(Ljava/lang/String;)V
+ 9: astore_1
+10: aload_1
+11: astore_2
+12: getstatic     #14                 // Field java/lang/System.out:Ljava/io/PrintStream;
+15: aload_2
+16: invokevirtual #20                 // Method Person.getName:()Ljava/lang/String;
+19: invokevirtual #24                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+22: aconst_null
+23: astore_1
+24: aconst_null
+25: astore_2
+26: return`,
+  verifiedWith: V,
+};
+
+const PERSON_BYTECODE: CodeListing = {
+  id: 'person-bytecode',
+  title: 'javap -c Person · Person(String)',
+  language: 'text',
+  code: `0: aload_0
+1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+4: aload_0
+5: aload_1
+6: putfield      #7                  // Field name:Ljava/lang/String;
+9: return`,
+  verifiedWith: V,
+};
+
+const LAUNCH_LOG: CodeListing = {
+  id: 'launch-log',
+  title: 'java -Xlog:class+load -cp . Main',
+  language: 'text',
+  code: `[0.020s][info][class,load] java.lang.Object source: shared objects file
+[0.021s][info][class,load] java.lang.String source: shared objects file
+…                                       (≈ 420 more JDK classes, nearly all from the CDS archive)
+[0.059s][info][class,load] Main source: file:/…/
+[0.060s][info][class,load] Person source: file:/…/
+Alex`,
+  verifiedWith: `${V}; 429 classes loaded in total`,
+};
+
+const HOT_JAVA: CodeListing = {
+  id: 'hot-java',
+  title: 'Hot.java',
+  language: 'java',
+  code: `public class Hot {
+    static int square(int x) {
+        return x * x;
+    }
+
+    public static void main(String[] args) {
+        long sum = 0;
+        for (int i = 0; i < 200_000; i++) {
+            sum += square(i);
+        }
+        System.out.println(sum);
+    }
+}`,
+  verifiedWith: V,
+};
+
+const PRINT_COMPILATION: CodeListing = {
+  id: 'print-compilation',
+  title: 'java -XX:+PrintCompilation -cp . Hot  (lines for Hot::)',
+  language: 'text',
+  code: `38   11       3       Hot::square (4 bytes)
+38   12       4       Hot::square (4 bytes)
+38   11       3       Hot::square (4 bytes)   made not entrant: not used
+40   13 %     3       Hot::main @ 4 (32 bytes)
+40   14       3       Hot::main (32 bytes)
+41   15 %     4       Hot::main @ 4 (32 bytes)`,
+  verifiedWith: `${V}; timings and compile ids vary between runs`,
+};
+
+const ALLOC_JAVA: CodeListing = {
+  id: 'alloc-java',
+  title: 'Alloc.java',
+  language: 'java',
+  code: `import java.util.ArrayList;
+import java.util.List;
+
+public class Alloc {
+    public static void main(String[] args) {
+        List<byte[]> keep = new ArrayList<>();
+        for (int i = 0; i < 2_000; i++) {
+            byte[] chunk = new byte[64 * 1024];
+            if (i % 10 == 0) keep.add(chunk);
+        }
+        System.out.println(keep.size());
+    }
+}`,
+  verifiedWith: V,
+};
+
+const GC_LOG: CodeListing = {
+  id: 'gc-log',
+  title: 'java -Xmx64m -Xlog:gc -cp . Alloc',
+  language: 'text',
+  code: `[0.006s][info][gc] Using G1
+[0.061s][info][gc] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 29M->3M(64M) 3.593ms
+[0.073s][info][gc] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 30M->6M(64M) 4.487ms
+[0.086s][info][gc] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 36M->9M(64M) 4.847ms
+[0.105s][info][gc] GC(3) Pause Young (Normal) (G1 Evacuation Pause) 42M->12M(64M) 8.274ms
+200`,
+  verifiedWith: V,
+};
+
+const NATIVE_JAVA: CodeListing = {
+  id: 'native-java',
+  title: 'NativeMath.java · UseNative.java',
+  language: 'java',
+  code: `public class NativeMath {
+    static {
+        System.loadLibrary("nativemath");
+    }
+
+    static native int add(int a, int b);
+}
+
+public class UseNative {
+    public static void main(String[] args) {
+        System.out.println(NativeMath.add(2, 3));
+    }
+}`,
+  verifiedWith: V,
+};
+
+const NATIVE_C: CodeListing = {
+  id: 'native-c',
+  title: 'nativemath.c (header generated by javac -h)',
+  language: 'c',
+  code: `#include <jni.h>
+#include "NativeMath.h"
+
+JNIEXPORT jint JNICALL Java_NativeMath_add(JNIEnv *env, jclass cls, jint a, jint b) {
+    return a + b;
+}`,
+  verifiedWith: `${V}, gcc on Ubuntu 24.04; prints 5`,
+};
+
+export const SCENARIOS: Scenario[] = [
+  {
+    id: 'launch',
+    title: 'From `java Main` to the first bytecode',
+    summary:
+      'Compilation, JVM creation, core classes, loading and initializing the main class, and the first frame.',
+    accuracyNote:
+      'An educational walkthrough of HotSpot (JDK 25) start-up. Real start-up interleaves these steps, runs on several threads, and initializes hundreds of JDK classes; we show the ones that matter for `Main`.',
+    listings: [MAIN_JAVA, LAUNCH_LOG],
+    references: [
+      { source: 'jvms-5.2' },
+      { source: 'jls-12.1' },
+      { source: 'src-launcher' },
+      { source: 'src-builtin-classloader' },
+    ],
+    steps: [
+      {
+        id: 'compile',
+        title: 'Compile ahead of time',
+        beginner:
+          'Before the program runs, `javac` turned `Main.java` and `Person.java` into `Main.class` and `Person.class`.',
+        technical:
+          '`javac` emits one class file per class: Java 25 class files carry major version 69. They contain bytecode and constant pools with **symbolic** references such as `#7 = Class Person`; nothing is linked yet.',
+        active: ['source-file', 'javac', 'class-file'],
+        flows: [
+          { from: 'source-file', to: 'javac' },
+          { from: 'javac', to: 'class-file' },
+        ],
+        focus: [{ listing: 'main-java', line: 1 }],
+      },
+      {
+        id: 'launch',
+        title: 'The launcher creates the JVM',
+        beginner:
+          'Typing `java -cp . Main` starts a small native program. It loads the JVM library into the same process and switches it on.',
+        technical:
+          'The launcher (`libjli`) parses the options, loads `libjvm`, and calls the JNI Invocation API `JNI_CreateJavaVM`. On most platforms it continues in a new native thread so that `-Xss` applies to the main Java thread.',
+        active: ['java-process', 'launcher', 'jvm'],
+        flows: [{ from: 'launcher', to: 'jvm' }],
+      },
+      {
+        id: 'vm-init',
+        title: 'The JVM builds its machinery',
+        beginner:
+          'The JVM reserves memory for objects and for compiled code, chooses a garbage collector, and prepares its interpreter.',
+        technical:
+          "HotSpot selects G1 (this is a server-class machine), reserves the Java heap and the 240 MB code cache, sets up Metaspace, and **generates** the template interpreter into the code cache's non-nmethod segment. The main thread gets a `JavaThread` with its stack and guard zones.",
+        active: [
+          'heap',
+          'method-area',
+          'code-cache',
+          'interpreter',
+          'garbage-collector',
+          'java-thread',
+        ],
+        flows: [{ from: 'java-process', to: 'virtual-memory', label: 'reserve' }],
+      },
+      {
+        id: 'bootstrap',
+        title: 'The bootstrap loader defines the core classes',
+        beginner:
+          "The JVM's built-in loader brings in the classes everything depends on, such as `Object` and `String`.",
+        technical:
+          '`java.lang.Object`, `String` and about 420 other `java.base` classes are mapped from the default CDS archive ("source: shared objects file" in the log), then initialized in dependency order. Their metadata lands in Metaspace, their `Class` mirrors in the heap.',
+        active: ['bootstrap-loader', 'loading', 'method-area', 'heap'],
+        states: { 'bootstrap-loader': 'ok' },
+        flows: [{ from: 'loading', to: 'method-area' }],
+        focus: [{ listing: 'launch-log', line: 1 }],
+      },
+      {
+        id: 'load-main',
+        title: 'The application loader is asked for Main',
+        beginner:
+          'The launcher asks the application loader for `Main`. It first asks its parents; neither has it, so it reads `Main.class` from the class path itself.',
+        technical:
+          '`Main` is in the unnamed package, which belongs to no named module, so `BuiltinClassLoader.loadClassOrNull` delegates to the platform loader, which delegates to the boot loader. Both return nothing; the application loader then finds `Main.class` on `-cp .` and defines it.',
+        active: [
+          'launcher',
+          'application-loader',
+          'platform-loader',
+          'bootstrap-loader',
+          'parent-delegation',
+          'loading',
+          'class-file',
+        ],
+        flows: [
+          { from: 'application-loader', to: 'platform-loader' },
+          { from: 'platform-loader', to: 'bootstrap-loader' },
+          { from: 'class-file', to: 'loading' },
+        ],
+        focus: [{ listing: 'launch-log', line: 4 }],
+      },
+      {
+        id: 'link-main',
+        title: 'Main is verified and prepared',
+        beginner:
+          "The JVM checks that `Main`'s bytecode is safe and sets up its static fields (it has none).",
+        technical:
+          'The type-checking verifier checks `main` against its `StackMapTable` (max_stack 3, max_locals 3). Preparation creates static fields with default values; `Main` declares none. Symbolic references such as `#7` stay unresolved until used.',
+        active: ['linking', 'verification', 'preparation'],
+        flows: [
+          { from: 'loading', to: 'linking' },
+          { from: 'verification', to: 'preparation' },
+        ],
+      },
+      {
+        id: 'init-main',
+        title: 'Main is initialized',
+        beginner:
+          'The main class is initialized before `main` is called. `Main` has no static setup code, so this is quick.',
+        technical:
+          'JVMS §5.5: the initial class is initialized before its `main` method is invoked. `Main` has no static initializer, so `javac` emitted no `<clinit>`; its superclass `Object` is already initialized.',
+        active: ['initialization'],
+        states: { initialization: 'ok' },
+      },
+      {
+        id: 'invoke-main',
+        title: 'main() gets a frame and starts',
+        beginner:
+          "The JVM calls `main`. A new frame is placed on the main thread's stack, and the interpreter starts at the first instruction.",
+        technical:
+          "The launcher invokes `main` through JNI (`CallStaticVoidMethod`). The main thread's JVM stack gets a frame for `main(String[])`: `args` in local slot 0, an empty operand stack, and pc 0 pointing at `new #7`. Execution starts in the interpreter.",
+        active: ['interpreter', 'jvm-stack', 'stack-frame', 'local-variables', 'pc-register'],
+        frame: { method: 'main(String[])', pc: 0, locals: ['args', '—', '—'], stack: [] },
+        flows: [
+          { from: 'interpreter', to: 'jvm-stack' },
+          { from: 'interpreter', to: 'pc-register' },
+        ],
+        focus: [{ listing: 'main-java', line: 3 }],
+      },
+    ],
+  },
+  {
+    id: 'new-person',
+    title: 'Executing `new Person("Alex")`',
+    summary:
+      'One statement, instruction by instruction: resolution, class loading, allocation, the operand stack, a constructor frame, and references.',
+    accuracyNote:
+      "Bytecode is real `javap -c` output from JDK 25. The machine states shown are the JVM Specification's model; HotSpot may keep values in registers, and once `main` is JIT-compiled the allocation itself may disappear through escape analysis.",
+    listings: [MAIN_JAVA, MAIN_BYTECODE, PERSON_BYTECODE, PERSON_JAVA],
+    references: [
+      { source: 'jvms-6.5-new' },
+      { source: 'jvms-6.5-invokespecial' },
+      { source: 'jvms-2.6.2' },
+      { source: 'jvms-5.4.3' },
+      { source: 'jvms-5.5' },
+    ],
+    steps: [
+      {
+        id: 'resolve',
+        title: 'new #7 · resolve and load Person',
+        beginner:
+          'The first instruction says "make a Person". The JVM has never used `Person` before, so it finds, checks and prepares the class first.',
+        technical:
+          '`new #7` names constant pool entry #7 (`Class Person`), still symbolic. Resolving it (JVMS §5.4.3.1) makes the application loader load `Person.class` after delegating to its parents; `Person` is linked and, because `new` is an initialization trigger (JVMS §5.5), initialized. It has no static initializer.',
+        active: [
+          'interpreter',
+          'pc-register',
+          'runtime-constant-pool',
+          'resolution',
+          'loading',
+          'application-loader',
+        ],
+        frame: { method: 'main(String[])', pc: 0, locals: ['args', '—', '—'], stack: [] },
+        flows: [
+          { from: 'resolution', to: 'runtime-constant-pool' },
+          { from: 'class-file', to: 'loading' },
+        ],
+        focus: [
+          { listing: 'main-java', line: 3 },
+          { listing: 'main-bytecode', line: 1 },
+        ],
+      },
+      {
+        id: 'allocate',
+        title: 'new #7 · allocate the object',
+        beginner:
+          'Space for one Person is reserved in the heap. Its `name` starts out empty (`null`). The JVM keeps a reference to it on its scratch stack.',
+        technical:
+          "HotSpot bumps the pointer of the thread's TLAB in an eden region and writes the header: an 8-byte mark word and a 4-byte compressed class pointer. Fields are zeroed (`name = null`); with the 4-byte compressed reference field the object is 16 bytes. A reference to the **uninitialized** object is pushed: operand stack `[ref]`.",
+        active: ['heap', 'eden', 'operand-stack', 'interpreter'],
+        frame: { method: 'main(String[])', pc: 0, locals: ['args', '—', '—'], stack: ['ref'] },
+        flows: [{ from: 'execution-engine', to: 'heap' }],
+        focus: [{ listing: 'main-bytecode', line: 1 }],
+        note: 'A reference value is not necessarily a memory address. With compressed oops HotSpot stores a 32-bit encoded value, and the GC may move the object later.',
+      },
+      {
+        id: 'dup',
+        title: 'dup · duplicate the reference',
+        beginner:
+          'The reference is copied on the scratch stack: one copy for the constructor, one to keep.',
+        technical:
+          'Operand stack `[ref]` → `[ref, ref]`. `invokespecial` will consume one; the other is still there afterwards for `astore_1`.',
+        active: ['operand-stack'],
+        frame: {
+          method: 'main(String[])',
+          pc: 3,
+          locals: ['args', '—', '—'],
+          stack: ['ref', 'ref'],
+        },
+        focus: [{ listing: 'main-bytecode', line: 2 }],
+      },
+      {
+        id: 'ldc',
+        title: 'ldc #9 · push "Alex"',
+        beginner: 'The text "Alex" is pushed on the scratch stack as the constructor\'s argument.',
+        technical:
+          '#9 is a `String` constant. On first execution HotSpot resolves it to an interned `java.lang.String` in the heap and caches it with the class. Operand stack `[ref, ref, "Alex"]`: depth 3, exactly `max_stack`.',
+        active: ['runtime-constant-pool', 'operand-stack', 'heap'],
+        frame: {
+          method: 'main(String[])',
+          pc: 4,
+          locals: ['args', '—', '—'],
+          stack: ['ref', 'ref', '"Alex"'],
+        },
+        flows: [{ from: 'runtime-constant-pool', to: 'operand-stack' }],
+        focus: [{ listing: 'main-bytecode', line: 3 }],
+      },
+      {
+        id: 'invokespecial',
+        title: 'invokespecial #11 · call the constructor',
+        beginner:
+          'The constructor is called. It gets its own frame on top of the stack, with `this` and `name` as its local variables.',
+        technical:
+          'Pops `"Alex"` and the receiver, resolves #11 to `Person.<init>(String)`, and pushes a new frame with locals `[0: this, 1: "Alex"]` (max_stack 2, max_locals 2). The frame records where to return: `main` at pc 9.',
+        active: ['jvm-stack', 'stack-frame', 'local-variables', 'frame-data', 'interpreter'],
+        frame: { method: 'Person.<init>(String)', pc: 0, locals: ['this', '"Alex"'], stack: [] },
+        flows: [{ from: 'interpreter', to: 'jvm-stack' }],
+        focus: [
+          { listing: 'main-bytecode', line: 4 },
+          { listing: 'person-bytecode', line: 1 },
+        ],
+      },
+      {
+        id: 'constructor',
+        title: 'Person.<init> runs',
+        beginner:
+          'The constructor first runs `Object`\'s constructor, then stores "Alex" into the new object\'s `name` field, and returns.',
+        technical:
+          '`aload_0; invokespecial Object.<init>` (one more frame, pushed and popped); `aload_0; aload_1; putfield #7` writes the reference to "Alex" into the object\'s `name` field in the heap; `return` pops the constructor frame.',
+        active: ['interpreter', 'heap', 'stack-frame'],
+        frame: { method: 'Person.<init>(String)', pc: 6, locals: ['this', '"Alex"'], stack: [] },
+        flows: [{ from: 'execution-engine', to: 'heap' }],
+        focus: [{ listing: 'person-bytecode', line: 5 }],
+      },
+      {
+        id: 'astore',
+        title: 'astore_1 · p1 refers to the object',
+        beginner: 'Back in `main`, the reference is stored in variable `p1`.',
+        technical:
+          'Execution resumes in `main` at pc 9. `astore_1` pops the remaining reference into local slot 1 (`p1`). The operand stack is empty again.',
+        active: ['local-variables', 'operand-stack'],
+        frame: { method: 'main(String[])', pc: 9, locals: ['args', 'ref', '—'], stack: [] },
+        states: { 'local-variables': 'ok' },
+        focus: [
+          { listing: 'main-java', line: 3 },
+          { listing: 'main-bytecode', line: 5 },
+        ],
+      },
+      {
+        id: 'copy',
+        title: 'p2 = p1 copies the reference',
+        beginner: 'Now `p2` refers to the same Person as `p1`. There is still only one object.',
+        technical:
+          '`aload_1; astore_2` copies the reference value from slot 1 to slot 2. One object, two references; no object is copied.',
+        active: ['local-variables', 'heap'],
+        frame: { method: 'main(String[])', pc: 11, locals: ['args', 'ref', 'ref'], stack: [] },
+        focus: [
+          { listing: 'main-java', line: 4 },
+          { listing: 'main-bytecode', line: 7 },
+        ],
+      },
+      {
+        id: 'print',
+        title: 'println(p2.getName()) reaches the OS',
+        beginner:
+          'Printing the name ends with the operating system writing the bytes to your terminal.',
+        technical:
+          "`getstatic #14` resolves `System.out`; `invokevirtual #20` selects `getName` through Person's method table and pushes a frame; `invokevirtual #24` calls `PrintStream.println`, which eventually reaches the native method `FileOutputStream.writeBytes`, the JDK's native library, and a `write` system call.",
+        active: ['interpreter', 'runtime-constant-pool', 'jni', 'native-libraries', 'system-calls'],
+        frame: { method: 'main(String[])', pc: 19, locals: ['args', 'ref', 'ref'], stack: [] },
+        flows: [
+          { from: 'execution-engine', to: 'jni' },
+          { from: 'jni', to: 'native-libraries' },
+          { from: 'native-libraries', to: 'system-calls' },
+        ],
+        focus: [
+          { listing: 'main-java', line: 5 },
+          { listing: 'main-bytecode', line: 10 },
+        ],
+      },
+      {
+        id: 'unreachable',
+        title: 'p1 = null; p2 = null',
+        beginner:
+          'Both variables are cleared. Nothing refers to the Person any more, so it is garbage — but nothing happens to it yet.',
+        technical:
+          '`aconst_null; astore_1; aconst_null; astore_2`. No frame slot, static field or other GC root reaches the Person: it is **unreachable**, therefore **eligible** for collection. It is reclaimed at some later young collection — or never, if the program exits first.',
+        active: ['local-variables', 'gc-roots', 'heap'],
+        frame: { method: 'main(String[])', pc: 25, locals: ['args', 'null', 'null'], stack: [] },
+        states: { 'gc-roots': 'warn' },
+        focus: [
+          { listing: 'main-java', line: 6 },
+          { listing: 'main-bytecode', line: 12 },
+        ],
+        note: 'The JIT may consider `p1` and `p2` dead right after their last use, so in compiled code the object can become unreachable even before these lines execute (JLS §12.6.1).',
+      },
+    ],
+  },
+  {
+    id: 'jit',
+    title: 'A hot method becomes machine code',
+    summary:
+      'Interpreter counters, tier-3 C1 code with profiling, tier-4 C2 code, on-stack replacement, and the deoptimization safety net.',
+    accuracyNote:
+      'Thresholds and log lines are from HotSpot JDK 25 (`-XX:+PrintCompilation`). Exact timing depends on compiler-queue load and CPU count; other JVMs use different strategies.',
+    listings: [HOT_JAVA, PRINT_COMPILATION],
+    references: [
+      { source: 'src-compilation-policy' },
+      { source: 'src-methoddata' },
+      { source: 'src-codecache' },
+      { source: 'src-deoptimization' },
+    ],
+    steps: [
+      {
+        id: 'interpret',
+        title: 'square() starts in the interpreter',
+        beginner:
+          'At first, every call to `square` is interpreted, and the JVM counts how often it runs.',
+        technical:
+          "Each call pushes a frame and executes `iload_0; iload_0; imul; ireturn` (4 bytes). The interpreter increments `square`'s invocation counter and `main`'s loop back-edge counter.",
+        active: ['interpreter', 'profiler', 'jvm-stack'],
+        flows: [{ from: 'interpreter', to: 'profiler' }],
+        focus: [{ listing: 'hot-java', line: 3 }],
+      },
+      {
+        id: 'tier3',
+        title: 'Tier 3: C1 compiles, with profiling',
+        beginner:
+          'After a couple of hundred calls the method counts as "warm", and the quick compiler translates it in the background.',
+        technical:
+          'Around `Tier3InvocationThreshold` (200, scaled by compiler load) the policy queues `square` at tier 3. A C1 compiler thread compiles it while the program keeps interpreting: `11  3  Hot::square (4 bytes)`.',
+        active: ['profiler', 'jit-compiler', 'compilation', 'c1'],
+        flows: [{ from: 'profiler', to: 'jit-compiler' }],
+        focus: [{ listing: 'print-compilation', line: 1 }],
+      },
+      {
+        id: 'install',
+        title: 'Installed in the code cache',
+        beginner:
+          'The machine code is stored, and from now on calls to `square` run it instead of the interpreter.',
+        technical:
+          "The tier-3 nmethod is installed in the profiled-nmethods code heap. It still counts calls and fills the method's MethodData profile for C2.",
+        active: ['code-cache', 'c1'],
+        states: { 'code-cache': 'ok' },
+        flows: [{ from: 'jit-compiler', to: 'code-cache' }],
+      },
+      {
+        id: 'tier4',
+        title: 'Tier 4: C2 optimizes',
+        beginner:
+          'The method is now hot, so the thorough compiler produces the fastest version, using what the profile learned.',
+        technical:
+          "With a mature profile (`Tier4InvocationThreshold` 5000) C2 compiles `square` with full optimization: `12  4  Hot::square (4 bytes)`. In `main`'s compiled loop, a 4-byte method like this is inlined, so no call remains.",
+        active: ['c2', 'optimization', 'profiler'],
+        flows: [{ from: 'profiler', to: 'jit-compiler' }],
+        focus: [{ listing: 'print-compilation', line: 2 }],
+      },
+      {
+        id: 'retire',
+        title: 'The tier-3 version is retired',
+        beginner: 'The older, slower version is no longer needed and is switched off.',
+        technical:
+          'Once the C2 nmethod (non-profiled code heap) is installed, the tier-3 one is `made not entrant: not used`: no new calls enter it, and it is unloaded later.',
+        active: ['code-cache'],
+        focus: [{ listing: 'print-compilation', line: 3 }],
+      },
+      {
+        id: 'osr',
+        title: 'OSR: the running loop jumps into compiled code',
+        beginner:
+          '`main` is called only once, but its loop runs 200,000 times. The JVM compiles the loop and moves the running method into the compiled version mid-loop.',
+        technical:
+          'The back-edge counter triggers an on-stack-replacement compile at bytecode index 4, the loop header (`13 %  3  Hot::main @ 4`, then `15 %  4`). The live interpreter frame is migrated into the compiled code.',
+        active: ['compilation', 'jvm-stack', 'interpreter', 'c2'],
+        focus: [
+          { listing: 'hot-java', line: 8 },
+          { listing: 'print-compilation', line: 6 },
+        ],
+      },
+      {
+        id: 'deopt',
+        title: 'If a bet fails: deoptimization',
+        beginner:
+          'If an assumption behind the fast code turned out wrong, the JVM would safely switch back to the interpreter and maybe compile again later.',
+        technical:
+          'Not triggered in this run. Had C2 speculated — say on a receiver type or an untaken branch — and been wrong, an uncommon trap would rebuild interpreter frames from debug info and execution would continue in the interpreter.',
+        active: ['deoptimization', 'interpreter', 'code-cache'],
+        states: { deoptimization: 'warn' },
+        flows: [
+          { from: 'code-cache', to: 'deoptimization' },
+          { from: 'deoptimization', to: 'interpreter' },
+        ],
+        note: 'This step is hypothetical for Hot.java: the log shows no deoptimization.',
+      },
+      {
+        id: 'cpu',
+        title: 'Native instructions on the CPU',
+        beginner:
+          'In the end, the work of `square` is a handful of machine instructions executed directly by the processor.',
+        technical:
+          'The C2 code for the loop is native x86-64 code: an integer multiply and an add per iteration, possibly unrolled. No bytecode is interpreted any more.',
+        active: ['code-cache', 'cpu'],
+        flows: [{ from: 'code-cache', to: 'cpu' }],
+      },
+    ],
+  },
+  {
+    id: 'young-gc',
+    title: 'A young collection in G1',
+    summary:
+      'Allocation in eden, a stop-the-world evacuation pause, roots, copying live objects, and freeing whole regions.',
+    accuracyNote:
+      'A simplified G1 young pause (JDK 25). Real pauses run on many GC threads in parallel and also process remembered sets, references and string deduplication; the log lines are from a real run.',
+    listings: [ALLOC_JAVA, GC_LOG],
+    references: [
+      { source: 'guide-gc' },
+      { source: 'src-g1' },
+      { source: 'src-safepoint' },
+      { source: 'src-tlab' },
+    ],
+    steps: [
+      {
+        id: 'allocate',
+        title: 'Threads allocate in eden',
+        beginner:
+          '`Alloc` creates 2,000 arrays and keeps only every tenth. All of them start life in eden.',
+        technical:
+          "Each thread allocates in eden regions, usually by bumping a pointer in its TLAB; a 64 KB array may take a slower path but still goes to eden (it is below G1's humongous threshold of half a region).",
+        active: ['java-thread', 'eden', 'heap'],
+        flows: [{ from: 'execution-engine', to: 'heap' }],
+        focus: [{ listing: 'alloc-java', line: 8 }],
+      },
+      {
+        id: 'trigger',
+        title: 'Eden is full',
+        beginner: 'Eventually there is no room left in eden, so a cleanup is needed.',
+        technical:
+          'An allocation finds no free eden region. G1 schedules a young collection: an evacuation pause.',
+        active: ['eden', 'garbage-collector', 'g1'],
+        states: { eden: 'warn' },
+      },
+      {
+        id: 'safepoint',
+        title: 'Stop the world at a safepoint',
+        beginner:
+          'All Java threads pause at a safe point so the collector can work without the objects changing under it.',
+        technical:
+          'Java threads are brought to a safepoint: interpreted and compiled code poll at method returns and loop back-edges; threads running native code count as already safe. The pause starts.',
+        active: ['interpreter', 'code-cache', 'java-thread', 'garbage-collector'],
+      },
+      {
+        id: 'roots',
+        title: 'Scan the roots',
+        beginner:
+          'The collector starts from the roots: variables in running methods, static fields, and JNI references.',
+        technical:
+          'G1 scans thread stacks (oop maps say which compiled-frame slots hold references), class and loader roots, JNI handles, and the remembered sets of young regions (references from old regions into young objects).',
+        active: ['gc-roots', 'jvm-stack', 'method-area', 'jni'],
+        flows: [
+          { from: 'jvm-stack', to: 'gc-roots' },
+          { from: 'method-area', to: 'gc-roots' },
+        ],
+      },
+      {
+        id: 'evacuate',
+        title: 'Copy the live objects out',
+        beginner:
+          'Objects that are still reachable are copied out of eden. The ones nobody refers to are simply left behind.',
+        technical:
+          'Live objects are copied from eden into survivor regions, or promoted to old regions when old enough or when survivor space is full; references are updated to the new copies. Here, the arrays held by `keep` survive.',
+        active: ['eden', 'survivor', 'old-generation', 'compaction', 'marking'],
+        flows: [{ from: 'garbage-collector', to: 'heap' }],
+      },
+      {
+        id: 'free',
+        title: 'Free whole eden regions',
+        beginner:
+          'Eden is now empty and ready for new objects. The garbage was never even looked at.',
+        technical:
+          'Every evacuated eden region is returned to the free list. The pause cost depends on live data, not on garbage.',
+        active: ['eden', 'heap'],
+        states: { eden: 'ok' },
+      },
+      {
+        id: 'resume',
+        title: 'Resume, and read the log',
+        beginner: 'The program continues. The GC log records what happened and how long it took.',
+        technical:
+          '`GC(0) Pause Young (Normal) (G1 Evacuation Pause) 29M->3M(64M) 3.593ms`: heap use fell from 29 MB to 3 MB, in a 64 MB heap, in 3.6 ms.',
+        active: ['garbage-collector', 'java-thread'],
+        states: { 'garbage-collector': 'ok' },
+        focus: [{ listing: 'gc-log', line: 2 }],
+      },
+    ],
+  },
+  {
+    id: 'jni-call',
+    title: 'Calling a native method',
+    summary:
+      'Loading a library during class initialization, binding a native method, the Java → native transition, and coming back.',
+    accuracyNote:
+      'HotSpot JDK 25 behaviour, verified by running the example. The thread-state transitions and native wrapper are implementation details; the JNI specification defines the contract.',
+    listings: [NATIVE_JAVA, NATIVE_C],
+    references: [
+      { source: 'jni-spec' },
+      { source: 'jvms-5.6' },
+      { source: 'api-system-loadlibrary' },
+      { source: 'jep-472' },
+    ],
+    steps: [
+      {
+        id: 'load-library',
+        title: 'Class initialization loads the library',
+        beginner:
+          'When `NativeMath` is first used, its static block loads the native library file from disk.',
+        technical:
+          '`System.loadLibrary("nativemath")` runs in `NativeMath.<clinit>`. The JDK maps the name to `libnativemath.so`, searches `java.library.path`, and the OS loads it (`dlopen` on Linux). Since JDK 24 this prints a restricted-method warning unless native access is enabled (JEP 472).',
+        active: ['initialization', 'native-libraries', 'system-calls'],
+        flows: [{ from: 'native-libraries', to: 'system-calls' }],
+        focus: [{ listing: 'native-java', line: 3 }],
+      },
+      {
+        id: 'bind',
+        title: 'Bind the native method',
+        beginner: 'The JVM finds the C function that implements `add` by its special name.',
+        technical:
+          'On first invocation the JVM links `NativeMath.add` to the symbol `Java_NativeMath_add` in the loaded library (JVMS §5.6). `RegisterNatives` (usually called from `JNI_OnLoad`) is the alternative.',
+        active: ['jni', 'native-libraries'],
+        flows: [{ from: 'jni', to: 'native-libraries' }],
+        focus: [{ listing: 'native-c', line: 4 }],
+      },
+      {
+        id: 'transition',
+        title: 'Java → native transition',
+        beginner:
+          'The call crosses from Java into C. The JVM marks the thread as "in native", so garbage collection can carry on meanwhile.',
+        technical:
+          'A native wrapper passes `JNIEnv*`, the `jclass` and both `jint`s using the platform C calling convention, switches the thread state to "in native", and calls the function on the same thread stack.',
+        active: ['jni', 'native-method-stack', 'interpreter'],
+        flows: [
+          { from: 'execution-engine', to: 'jni' },
+          { from: 'jni', to: 'native-method-stack' },
+        ],
+        focus: [{ listing: 'native-java', line: 11 }],
+      },
+      {
+        id: 'run-native',
+        title: 'The C function runs',
+        beginner: 'The C code adds the numbers. It is ordinary machine code.',
+        technical:
+          '`return a + b;` Native code that needed Java objects would use `JNIEnv` functions and local references.',
+        active: ['native-libraries', 'native-method-stack', 'cpu'],
+        focus: [{ listing: 'native-c', line: 5 }],
+      },
+      {
+        id: 'return',
+        title: 'Back to Java',
+        beginner: 'The result comes back to Java, and the program prints 5.',
+        technical:
+          'The wrapper switches the thread back to "in Java", checks for a pending exception or safepoint, releases local references, and pushes the `jint` result on the caller\'s operand stack.',
+        active: ['jni', 'interpreter', 'operand-stack'],
+        states: { jni: 'ok' },
+      },
+    ],
+  },
+];
