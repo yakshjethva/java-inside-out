@@ -4,3 +4,9 @@ node_modules
 package-lock.json
 playwright-report
 test-results
+
+# AI development configuration: vendored skills (pinned by hash in
+# skills-lock.json) and agent instructions are kept exactly as written.
+.claude
+CLAUDE.md
+skills-lock.json
