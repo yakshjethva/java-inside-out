@@ -1,2 +1,36 @@
-# Playwright CLI output (may contain credentials)
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.vite/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# Browser sessions and authentication
 .playwright-cli/
+.playwright/
+playwright/.auth/
+.storage/
+auth.json
+storage-state.json
+
+# OS and IDE files
+.DS_Store
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
