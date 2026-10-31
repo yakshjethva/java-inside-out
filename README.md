@@ -12,7 +12,7 @@ watch at work.
 
 It is a static site. There is no backend, database, account, analytics or paid service, and
 after the first visit it keeps working offline. Once the deployment workflow has run on `main`,
-the site is served from GitHub Pages at <https://yakshjethva.github.io/java-inside-out/>.
+the site is served from GitHub Pages at <https://yakshjethva.github.io/jvm-inside-out/>.
 
 ## What is in this release
 
@@ -78,7 +78,7 @@ the site until they exist.
   Specification concepts, dashed outlines with an `HS` tag for HotSpot structures, dotted
   outlines for parts outside the JVM. Every simplified visualization carries an accuracy note.
 
-Found a mistake? Please [open an issue](https://github.com/yakshjethva/java-inside-out/issues)
+Found a mistake? Please [open an issue](https://github.com/yakshjethva/jvm-inside-out/issues)
 with a source.
 
 ## Local development
@@ -86,11 +86,11 @@ with a source.
 You need Node.js 22 or newer (see `.nvmrc`) and npm.
 
 ```bash
-git clone https://github.com/yakshjethva/java-inside-out.git
+git clone https://github.com/yakshjethva/jvm-inside-out.git
 ```
 
 ```bash
-cd java-inside-out
+cd jvm-inside-out
 ```
 
 ```bash
@@ -121,20 +121,20 @@ Browser tests need a Playwright browser once:
 npx playwright install chromium
 ```
 
-`npm run test:e2e` builds the site with the base path `/java-inside-out/` and serves it with
+`npm run test:e2e` builds the site with the base path `/jvm-inside-out/` and serves it with
 `scripts/serve-pages.mjs`, which mimics GitHub Pages: files under the base path, a redirect for
 directories without a trailing slash, and `404.html` with status 404 for unknown paths. To look
 at that build yourself:
 
 ```bash
-BASE_PATH=/java-inside-out/ npm run build
+BASE_PATH=/jvm-inside-out/ npm run build
 ```
 
 ```bash
 npm run preview:pages
 ```
 
-Then open <http://localhost:4173/java-inside-out/>.
+Then open <http://localhost:4173/jvm-inside-out/>.
 
 ## Deployment to GitHub Pages
 
@@ -153,7 +153,7 @@ deploys it. Pull requests run every step except the deployment.
 GitHub Pages serves a project site from `/<repository>/`, so the build needs that base path.
 The workflow sets `BASE_PATH` automatically:
 
-- `/<repository>/` for a project site (here `/java-inside-out/`);
+- `/<repository>/` for a project site (here `/jvm-inside-out/`);
 - `/` for a user or organisation site (a repository named `<owner>.github.io`);
 - the value of the `PAGES_BASE_PATH` repository variable, if you set one. Use `/` with a custom
   domain.
@@ -161,7 +161,7 @@ The workflow sets `BASE_PATH` automatically:
 The base path is applied by Vite to every asset URL and used as the router's basename; nothing in
 the code assumes the site lives at `/`. Because GitHub Pages has no rewrite rules, the build also
 writes `404.html` and a copy of `index.html` for each top-level page, so deep links such as
-`/java-inside-out/anatomy?c=heap` load with HTTP 200 (after GitHub Pages adds the trailing
+`/jvm-inside-out/anatomy?c=heap` load with HTTP 200 (after GitHub Pages adds the trailing
 slash) and unknown paths still load the app, with status 404.
 
 ### Offline use

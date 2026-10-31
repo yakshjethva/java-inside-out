@@ -67,7 +67,7 @@ export function ContributingPage() {
           <CodeBlock
             className="not-prose mt-3"
             language="shell"
-            code={`git clone ${SITE.repository}.git\ncd java-inside-out\nnpm ci\nnpm run dev`}
+            code={`git clone ${SITE.repository}.git\ncd jvm-inside-out\nnpm ci\nnpm run dev`}
           />
           <p>
             Before opening a pull request run <code>npm run check</code> (type check, lint, unit

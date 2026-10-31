@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  * subpath GitHub Pages uses. Set E2E_SKIP_BUILD=1 to reuse an existing dist/
  * (CI builds once, then runs the tests against that exact artifact).
  */
-const trimmed = (process.env.BASE_PATH ?? '/java-inside-out/').replace(/^\/+|\/+$/g, '');
+const trimmed = (process.env.BASE_PATH ?? '/jvm-inside-out/').replace(/^\/+|\/+$/g, '');
 const BASE = trimmed ? `/${trimmed}/` : '/';
 const PORT = Number(process.env.E2E_PORT ?? 4173);
 const serve = `node scripts/serve-pages.mjs --dir dist --base ${BASE} --port ${PORT}`;

@@ -17,7 +17,7 @@ with the code.
 
 - **Static site only.** No backend, database, account system, API, paid service, analytics or
   tracking. No fonts, scripts or images from other hosts; technical images are original SVG.
-- **GitHub Pages subpath.** The site is served from `/java-inside-out/`. Never write
+- **GitHub Pages subpath.** The site is served from `/jvm-inside-out/`. Never write
   root-relative asset paths; use `import.meta.env.BASE_URL` or router links (the router's
   basename is the base path).
 - **Visualizations are custom SVG.** Do not add a diagram library, and do not add large
@@ -49,21 +49,21 @@ Node.js 22 or newer (`.nvmrc`). The `@` import alias points to `src/`.
 
 ## Commands
 
-| Command                                     | What it does                                                                |
-| ------------------------------------------- | --------------------------------------------------------------------------- |
-| `npm ci`                                    | Install exact dependencies                                                  |
-| `npm run dev`                               | Development server (Vite, <http://localhost:5173/>)                         |
-| `npm run typecheck`                         | `tsc` for the app, tests and tooling                                        |
-| `npm run lint`                              | ESLint (with jsx-a11y, react-hooks) and `prettier --check`                  |
-| `npm run format`                            | Prettier, writing changes                                                   |
-| `npm test`                                  | Vitest: unit, component and content-integrity tests                         |
-| `npm run build`                             | Production build into `dist/`                                               |
-| `npm run check`                             | typecheck, lint, test and build: run before every pull request              |
-| `npm run test:e2e`                          | Playwright against a production build served on `/java-inside-out/`         |
-| `BASE_PATH=/java-inside-out/ npm run build` | Build exactly as GitHub Pages serves it                                     |
-| `npm run preview:pages`                     | Serve `dist/` like GitHub Pages at <http://localhost:4173/java-inside-out/> |
+| Command                                    | What it does                                                               |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| `npm ci`                                   | Install exact dependencies                                                 |
+| `npm run dev`                              | Development server (Vite, <http://localhost:5173/>)                        |
+| `npm run typecheck`                        | `tsc` for the app, tests and tooling                                       |
+| `npm run lint`                             | ESLint (with jsx-a11y, react-hooks) and `prettier --check`                 |
+| `npm run format`                           | Prettier, writing changes                                                  |
+| `npm test`                                 | Vitest: unit, component and content-integrity tests                        |
+| `npm run build`                            | Production build into `dist/`                                              |
+| `npm run check`                            | typecheck, lint, test and build: run before every pull request             |
+| `npm run test:e2e`                         | Playwright against a production build served on `/jvm-inside-out/`         |
+| `BASE_PATH=/jvm-inside-out/ npm run build` | Build exactly as GitHub Pages serves it                                    |
+| `npm run preview:pages`                    | Serve `dist/` like GitHub Pages at <http://localhost:4173/jvm-inside-out/> |
 
-`npm run test:e2e` builds with `BASE_PATH=/java-inside-out/` and serves `dist/` through
+`npm run test:e2e` builds with `BASE_PATH=/jvm-inside-out/` and serves `dist/` through
 `scripts/serve-pages.mjs`, which reproduces GitHub Pages: files under the base path, trailing-slash
 redirects, and `404.html` with status 404. Set `E2E_SKIP_BUILD=1` to test an existing `dist/`.
 Install the browser once with `npx playwright install chromium`.

@@ -221,7 +221,7 @@ Layout coordinates live beside the visualization (`src/modules/jvm/layout.ts`), 
   inspector, knowledge check, component tree, the explorer overview and tour, the header, the first
   lesson and the journey machine; Playwright tests (desktop and mobile) that run against the
   production build served by `scripts/serve-pages.mjs`, which reproduces GitHub Pages on the
-  `/java-inside-out/` subpath (redirects, `404.html`, status codes), including an offline reload, the
+  `/jvm-inside-out/` subpath (redirects, `404.html`, status codes), including an offline reload, the
   whole first lesson, reduced motion and the migration of stored data.
 
 ### Milestones
@@ -240,20 +240,20 @@ Layout coordinates live beside the visualization (`src/modules/jvm/layout.ts`), 
 
 ### First-release acceptance criteria and where they are met
 
-| #   | Criterion                                        | Milestone                                                       |
-| --- | ------------------------------------------------ | --------------------------------------------------------------- |
-| 1   | Deploys to GitHub Pages                          | M1 (workflow; needs Pages enabled by the repository owner)      |
-| 2   | Homepage loads from a subpath                    | M1 (verified locally by Playwright against `/java-inside-out/`) |
-| 3   | JVM anatomy shows all major subsystems           | M2                                                              |
-| 4   | Every major component is selectable              | M2                                                              |
-| 5   | Inspector has substantive technical explanations | M2                                                              |
-| 6   | Relationships are navigable                      | M2                                                              |
-| 7   | Working class-loading walkthrough                | M3 (previews: the launch walkthrough, Start here chapter 4)     |
-| 8   | Memory Explorer shows stack, heap and references | M4 (previews: `new Person("Alex")`, Start here chapter 5)       |
-| 9   | Every diagram has accuracy notes                 | M2                                                              |
-| 10  | Works without a backend or paid service          | M1                                                              |
-| 11  | README covers local development and deployment   | M1                                                              |
-| 12  | No critical navigation or interaction is broken  | Every milestone                                                 |
+| #   | Criterion                                        | Milestone                                                      |
+| --- | ------------------------------------------------ | -------------------------------------------------------------- |
+| 1   | Deploys to GitHub Pages                          | M1 (workflow; needs Pages enabled by the repository owner)     |
+| 2   | Homepage loads from a subpath                    | M1 (verified locally by Playwright against `/jvm-inside-out/`) |
+| 3   | JVM anatomy shows all major subsystems           | M2                                                             |
+| 4   | Every major component is selectable              | M2                                                             |
+| 5   | Inspector has substantive technical explanations | M2                                                             |
+| 6   | Relationships are navigable                      | M2                                                             |
+| 7   | Working class-loading walkthrough                | M3 (previews: the launch walkthrough, Start here chapter 4)    |
+| 8   | Memory Explorer shows stack, heap and references | M4 (previews: `new Person("Alex")`, Start here chapter 5)      |
+| 9   | Every diagram has accuracy notes                 | M2                                                             |
+| 10  | Works without a backend or paid service          | M1                                                             |
+| 11  | README covers local development and deployment   | M1                                                             |
+| 12  | No critical navigation or interaction is broken  | Every milestone                                                |
 
 ## 7. GitHub Pages deployment plan
 

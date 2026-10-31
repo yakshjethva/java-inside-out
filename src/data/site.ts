@@ -2,7 +2,7 @@
 export const SITE = {
   name: 'Inside Java',
   tagline: 'Understand Java from the inside out.',
-  repository: 'https://github.com/yakshjethva/java-inside-out',
+  repository: 'https://github.com/yakshjethva/jvm-inside-out',
   specVersion: 'Java SE 25',
   implementationVersion: 'OpenJDK HotSpot, JDK 25',
 } as const;

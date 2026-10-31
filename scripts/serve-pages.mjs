@@ -3,13 +3,13 @@
  * Serves the production build the way GitHub Pages serves a project site, so
  * the Playwright tests exercise the real deployment conditions:
  *
- *  - every file lives under the base path (for example /java-inside-out/);
+ *  - every file lives under the base path (for example /jvm-inside-out/);
  *  - a directory requested without a trailing slash is redirected (301) to the
  *    slash form, keeping the query string;
  *  - a directory answers with its index.html;
  *  - anything else answers with 404.html and HTTP status 404.
  *
- * Usage: node scripts/serve-pages.mjs [--dir dist] [--base /java-inside-out/] [--port 4173]
+ * Usage: node scripts/serve-pages.mjs [--dir dist] [--base /jvm-inside-out/] [--port 4173]
  */
 import fs from 'node:fs';
 import http from 'node:http';
@@ -19,7 +19,7 @@ import { parseArgs } from 'node:util';
 const { values } = parseArgs({
   options: {
     dir: { type: 'string', default: 'dist' },
-    base: { type: 'string', default: process.env.BASE_PATH ?? '/java-inside-out/' },
+    base: { type: 'string', default: process.env.BASE_PATH ?? '/jvm-inside-out/' },
     port: { type: 'string', default: '4173' },
   },
 });
