@@ -13,27 +13,41 @@ export interface NavItem {
   description: string;
 }
 
-/** Primary navigation. Only pages that exist in this release are listed. */
+/**
+ * Primary navigation, in the order a new visitor needs it. Only pages that
+ * exist in this release are listed.
+ */
 export const PRIMARY_NAV: NavItem[] = [
-  { to: '/anatomy', label: 'JVM Anatomy', description: 'Interactive map of every JVM subsystem' },
   {
-    to: '/paths',
-    label: 'Learning Paths',
-    description: 'The curriculum and what is available now',
+    to: '/start',
+    label: 'Start here',
+    description: 'A guided first lesson: what happens when you run a Java program',
   },
-  { to: '/glossary', label: 'Glossary', description: 'Every technical term, at two levels' },
+  { to: '/paths', label: 'Learn', description: 'Learning paths that begin with a question' },
+  {
+    to: '/anatomy',
+    label: 'Explore the JVM',
+    description: 'The interactive map of the machine that runs Java',
+  },
+  { to: '/glossary', label: 'Glossary', description: 'Every technical term, in plain words' },
+];
+
+/** Reference and project pages, grouped under "More". */
+export const MORE_NAV: NavItem[] = [
   {
     to: '/references',
     label: 'References',
     description: 'Specifications, JEPs and source code we cite',
   },
-];
-
-export const SECONDARY_NAV: NavItem[] = [
-  { to: '/about', label: 'About', description: 'Accuracy policy and versions' },
+  { to: '/about', label: 'About', description: 'Why Inside Java exists, versions and accuracy' },
   {
     to: '/contributing',
     label: 'Contributing',
     description: 'How to improve the content and code',
+  },
+  {
+    to: '/about#project-status',
+    label: 'Project status',
+    description: 'What is built and what comes next',
   },
 ];

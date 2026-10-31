@@ -76,6 +76,11 @@ describe('progress actions', () => {
   });
 
   it('has safe default preferences', () => {
-    expect(preferencesStore.get()).toEqual({ level: 'beginner', motion: 'system' });
+    expect(preferencesStore.get()).toEqual({
+      level: 'simple',
+      motion: 'system',
+      mapView: 'overview',
+      dismissed: {},
+    });
   });
 });

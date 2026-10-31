@@ -4,8 +4,9 @@
  * links with HTTP 200. Only add a path here once its page is built.
  */
 export const STATIC_ROUTES = [
-  { path: 'paths', title: 'Learning Paths' },
-  { path: 'anatomy', title: 'JVM Anatomy' },
+  { path: 'start', title: 'Start here' },
+  { path: 'paths', title: 'Learn' },
+  { path: 'anatomy', title: 'Explore the JVM' },
   { path: 'glossary', title: 'Glossary' },
   { path: 'references', title: 'References' },
   { path: 'about', title: 'About' },

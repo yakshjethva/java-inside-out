@@ -1,10 +1,12 @@
 import { BookOpen, Crosshair, X } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { getGlossaryEntry } from '@/glossary';
 import { getComponentDoc } from '@/content/jvm';
 import { usePreferences } from '@/hooks/useLearningState';
 import { Popover } from './Popover';
+import { LevelSwitch } from './LevelSwitch';
+import { LevelText } from './LevelText';
 import { RichText } from './RichText';
 
 /**
@@ -61,10 +63,9 @@ function GlossaryCard({
 }) {
   const entry = getGlossaryEntry(termId);
   const { preferences, setLevel } = usePreferences();
-  const levelId = useId();
   if (!entry) return null;
   const component = entry.componentId ? getComponentDoc(entry.componentId) : undefined;
-  const technical = preferences.level === 'technical';
+  const technical = preferences.level !== 'simple';
 
   return (
     <div className="p-4 text-[14px]">
@@ -85,31 +86,13 @@ function GlossaryCard({
         </button>
       </div>
 
-      <div className="mt-3 flex items-center gap-2" role="group" aria-labelledby={levelId}>
-        <span id={levelId} className="sr-only">
-          Explanation level
-        </span>
-        {(['beginner', 'technical'] as const).map((level) => (
-          <button
-            key={level}
-            type="button"
-            aria-pressed={preferences.level === level}
-            onClick={() => setLevel(level)}
-            className={
-              preferences.level === level
-                ? 'rounded border border-exec-500/60 bg-exec-900/70 px-2 py-0.5 text-[12px] text-exec-200'
-                : 'rounded border border-ink-600 px-2 py-0.5 text-[12px] text-fg-subtle hover:text-fg'
-            }
-          >
-            {level === 'beginner' ? 'Beginner' : 'Technical'}
-          </button>
-        ))}
+      <div className="mt-3">
+        <LevelSwitch value={preferences.level} onChange={setLevel} />
       </div>
 
-      <RichText
-        className="prose-ij mt-3 text-[14px]"
-        text={technical ? entry.technical : entry.beginner}
-      />
+      <div className="mt-3">
+        <LevelText content={entry} level={preferences.level} className="prose-ij text-[14px]" />
+      </div>
 
       {technical && (
         <div className="mt-3 border-t border-ink-600 pt-3">

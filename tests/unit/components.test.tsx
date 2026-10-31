@@ -1,14 +1,14 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ComponentTree, type TreeItem } from '@/components/anatomy/ComponentTree';
 import { ComponentInspector } from '@/components/inspector/ComponentInspector';
 import { KnowledgeCheck } from '@/components/learning/KnowledgeCheck';
 import { getComponentDoc } from '@/content/jvm';
 import { ANATOMY_QUIZ } from '@/content/jvm/quiz';
 import { relationshipsOf } from '@/content/jvm/relationships';
-import { progressStore } from '@/hooks/useLearningState';
+import { preferencesStore, progressStore } from '@/hooks/useLearningState';
 import { JvmAnatomyPage } from '@/pages/JvmAnatomyPage';
 
 function renderInRouter(element: React.ReactNode, path = '/') {
@@ -19,7 +19,7 @@ function renderInRouter(element: React.ReactNode, path = '/') {
 describe('ComponentInspector', () => {
   const doc = getComponentDoc('heap');
   const { outgoing, incoming } = relationshipsOf('heap');
-  const setup = (level: 'beginner' | 'technical' = 'beginner') => {
+  const setup = (level: 'simple' | 'developer' | 'deep' = 'simple') => {
     const onNavigate = vi.fn();
     const onLevelChange = vi.fn();
     renderInRouter(
@@ -51,10 +51,10 @@ describe('ComponentInspector', () => {
   };
 
   it('shows the component, its provenance and the chosen explanation level', () => {
-    setup('technical');
+    setup('deep');
     expect(screen.getByRole('heading', { level: 2, name: 'Heap' })).toBeInTheDocument();
     expect(screen.getAllByText('JVM specification').length).toBeGreaterThan(0);
-    expect(screen.getByText('Technical explanation')).toBeInTheDocument();
+    expect(screen.getByText('What actually happens?')).toBeInTheDocument();
     expect(screen.getByText('Common misconceptions')).toBeInTheDocument();
     expect(screen.getByText('Sources')).toBeInTheDocument();
   });
@@ -62,14 +62,63 @@ describe('ComponentInspector', () => {
   it('navigates through relationships, parts and breadcrumbs', async () => {
     const user = userEvent.setup();
     const { onNavigate, onLevelChange } = setup();
-    await user.click(screen.getByRole('button', { name: 'Garbage collector' }));
+    const fit = screen.getByRole('heading', { name: 'Where does it fit?' }).closest('section')!;
+    await user.click(within(fit).getByRole('button', { name: 'Garbage collector' }));
     expect(onNavigate).toHaveBeenCalledWith('garbage-collector');
-    await user.click(screen.getByRole('button', { name: 'Young generation' }));
+    await user.click(within(fit).getByRole('button', { name: 'Young generation' }));
     expect(onNavigate).toHaveBeenCalledWith('young-generation');
-    await user.click(screen.getByRole('button', { name: 'Java Virtual Machine' }));
+    const breadcrumb = screen.getByRole('navigation', { name: 'Component breadcrumb' });
+    await user.click(within(breadcrumb).getByRole('button', { name: 'Java Virtual Machine' }));
     expect(onNavigate).toHaveBeenCalledWith('jvm');
-    await user.click(screen.getByRole('radio', { name: 'Technical' }));
-    expect(onLevelChange).toHaveBeenCalledWith('technical');
+    await user.click(screen.getByRole('radio', { name: 'Deep dive' }));
+    expect(onLevelChange).toHaveBeenCalledWith('deep');
+  });
+
+  it('opens with plain answers and keeps the technical details one step away', () => {
+    setup('simple');
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(headings).toEqual([
+      'What is this?',
+      'Picture it',
+      'What actually happens?',
+      'Where does it fit?',
+      'Check your understanding',
+    ]);
+    expect(screen.getByText('Where the picture stops working')).toBeInTheDocument();
+    const details = screen.getByText('Explore the technical details').closest('details')!;
+    expect(details.open).toBe(false);
+    // Nothing was removed: citations and misconceptions are inside the details.
+    expect(within(details).getByText('Sources')).toBeInTheDocument();
+    expect(within(details).getByText('Common misconceptions')).toBeInTheDocument();
+  });
+
+  it('opens the technical details by default at the deep-dive level', () => {
+    setup('deep');
+    expect(screen.getByText('Explore the technical details').closest('details')!.open).toBe(true);
+  });
+
+  it('says when a developer explanation has not been written yet', () => {
+    const doc = getComponentDoc('eden');
+    expect(doc.developer).toBeUndefined();
+    renderInRouter(
+      <ComponentInspector
+        doc={doc}
+        ancestry={[{ id: 'eden', name: 'Eden' }]}
+        parts={[]}
+        outgoing={[]}
+        incoming={[]}
+        level="developer"
+        onLevelChange={() => {}}
+        onNavigate={() => {}}
+        bookmarked={false}
+        onToggleBookmark={() => {}}
+        understood={false}
+        onToggleUnderstood={() => {}}
+      />,
+    );
+    expect(
+      screen.getByText(/developer explanation for this has not been written yet/),
+    ).toBeInTheDocument();
   });
 });
 
@@ -164,12 +213,58 @@ describe('ComponentTree', () => {
 });
 
 describe('JVM anatomy page', () => {
-  it('selects a component from the diagram and shows it in the inspector', async () => {
+  beforeEach(() => {
+    preferencesStore.reset();
+    progressStore.reset();
+  });
+
+  it('starts with the six main parts and opens the one you select', async () => {
     const { router } = renderInRouter(<JvmAnatomyPage />, '/anatomy');
+    const memory = await screen.findByRole('button', { name: /^Memory \(Runtime data areas\)/ });
+    expect(screen.queryByRole('button', { name: /^Heap, / })).not.toBeInTheDocument();
+    fireEvent.click(memory);
+    expect(router.state.location.search).toBe('?c=runtime-data-areas');
     const heap = await screen.findByRole('button', { name: /^Heap, JVM specification concept/ });
     fireEvent.click(heap);
     expect(await screen.findByRole('heading', { level: 2, name: 'Heap' })).toBeInTheDocument();
     expect(router.state.location.search).toBe('?c=heap');
+  });
+
+  it('shows the full map on request and remembers the choice', async () => {
+    const user = userEvent.setup();
+    const { router } = renderInRouter(<JvmAnatomyPage />, '/anatomy');
+    await user.click(
+      await screen.findAllByRole('button', { name: 'Show the full JVM map' }).then((b) => b[0]!),
+    );
+    expect(router.state.location.search).toBe('?view=full');
+    expect(await screen.findByRole('button', { name: /^Heap, / })).toBeInTheDocument();
+    expect(preferencesStore.get().mapView).toBe('full');
+  });
+
+  it('opens a deep link inside the region that contains it', async () => {
+    renderInRouter(<JvmAnatomyPage />, '/anatomy?c=eden');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Eden' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Eden, / })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^Execution engine \(Execution engine\)/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers the guided tour once, and remembers when it is dismissed', async () => {
+    const user = userEvent.setup();
+    preferencesStore.reset();
+    const first = renderInRouter(<JvmAnatomyPage />, '/anatomy');
+    expect(
+      await screen.findByRole('region', { name: 'Guided tour of the explorer' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close the tour' }));
+    expect('explorer-tour' in preferencesStore.get().dismissed).toBe(true);
+    first.unmount();
+    renderInRouter(<JvmAnatomyPage />, '/anatomy');
+    await screen.findAllByRole('button', { name: 'Show the full JVM map' });
+    expect(
+      screen.queryByRole('region', { name: 'Guided tour of the explorer' }),
+    ).not.toBeInTheDocument();
   });
 
   it('opens the execution walkthrough and steps forward', async () => {

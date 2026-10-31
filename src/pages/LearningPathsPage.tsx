@@ -1,161 +1,248 @@
-import { ArrowRight } from 'lucide-react';
+import {
+  ArrowRight,
+  Bookmark,
+  Check,
+  Map as MapIcon,
+  Microscope,
+  Play,
+  Sparkles,
+} from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { InlineRichText } from '@/components/learning/RichText';
 import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/Button';
 import { COMPONENT_LIST } from '@/content/jvm';
-import { ANATOMY_QUIZ } from '@/content/jvm/quiz';
+import { FIRST_RUN } from '@/content/lesson/firstRun';
 import { LEARNING_PATHS } from '@/content/paths';
+import { QUESTION_PATHS, type QuestionPath } from '@/content/questions';
 import { useProgress } from '@/hooks/useLearningState';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { cn } from '@/lib/cn';
+
+const KIND_ICON = {
+  lesson: Sparkles,
+  map: MapIcon,
+  walkthrough: Play,
+  inside: Microscope,
+};
 
 export function LearningPathsPage() {
-  usePageTitle('Learning Paths');
+  usePageTitle('Learn');
   const progress = useProgress();
   const location = useLocation();
+  const done = progress.lessons[FIRST_RUN.id] ?? {};
+  const chaptersDone = FIRST_RUN.chapters.filter((chapter) => chapter.id in done).length;
+  const next = FIRST_RUN.chapters.find((chapter) => !(chapter.id in done));
   const explored = Object.keys(progress.explored).length;
-  const quiz = progress.quizzes[ANATOMY_QUIZ.id];
 
   useEffect(() => {
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   }, [location.hash]);
 
-  const available = LEARNING_PATHS.filter((p) => p.route);
-  const upcoming = LEARNING_PATHS.filter((p) => !p.route);
-
   return (
     <>
-      <PageHeader kicker="Curriculum" title="Learning paths">
+      <PageHeader kicker="Learn" title="Start with a question">
         <p>
-          A structured route from "what is a class file?" to JIT internals. Paths are released one
-          milestone at a time, and only finished ones are linked. Your progress is stored in this
-          browser only.
+          Each path begins with something you might already wonder about, and goes as deep as you
+          like. If you are new, begin with the first one: everything else builds on it.
         </p>
       </PageHeader>
-      <div className="mx-auto max-w-[1240px] px-4 py-12 sm:px-6">
-        <h2 className="kicker">Available now</h2>
-        {available.map((path) => (
-          <article
-            key={path.id}
-            id={path.id}
-            className="mt-4 scroll-mt-20 rounded-xl border border-exec-500/40 bg-ink-900/70 p-6"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-2xl">
-                <p className="font-mono text-[12px] text-fg-subtle">
-                  Path {path.code} · {path.milestone}
-                </p>
-                <h3 className="mt-1 font-serif text-[28px] text-fg">{path.title}</h3>
-                <p className="mt-2 text-[15.5px] text-fg-muted">
-                  <InlineRichText text={path.summary} />
-                </p>
-              </div>
-              <Link
-                to={path.route!}
-                className="inline-flex items-center gap-2 rounded-md border border-exec-400 bg-exec-500 px-4 py-2 text-[14px] font-medium text-ink-950 hover:bg-exec-400"
-              >
-                {explored ? 'Continue' : 'Start'} <ArrowRight size={16} aria-hidden />
-              </Link>
-            </div>
-            <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-              <div>
-                <p className="kicker">Topics</p>
-                <ul className="mt-2 space-y-1.5 text-[14.5px] text-fg-muted">
-                  {path.topics.map((topic) => (
-                    <li key={topic} className="flex gap-2">
-                      <span aria-hidden className="text-exec-400">
-                        ·
-                      </span>
-                      {topic}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="kicker">Your progress</p>
-                <div className="mt-2 space-y-3 text-[14px]">
-                  <div>
-                    <div className="flex justify-between text-fg-muted">
-                      <span>Components explored</span>
-                      <span className="tabular">
-                        {explored} / {COMPONENT_LIST.length}
-                      </span>
-                    </div>
-                    <div
-                      className="mt-1 h-1.5 rounded-full bg-ink-700"
-                      role="progressbar"
-                      aria-label="Components explored"
-                      aria-valuemin={0}
-                      aria-valuemax={COMPONENT_LIST.length}
-                      aria-valuenow={explored}
-                    >
-                      <div
-                        className="h-full rounded-full bg-exec-400"
-                        style={{ width: `${(explored / COMPONENT_LIST.length) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-between text-fg-muted">
-                    <span>Marked as understood</span>
-                    <span className="tabular">{Object.keys(progress.understood).length}</span>
-                  </div>
-                  <div className="flex justify-between text-fg-muted">
-                    <span>Knowledge check</span>
-                    <span className="tabular">
-                      {quiz ? `${quiz.correct} / ${quiz.total} correct` : 'not started'}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {path.labs.map((lab) => (
-                      <Badge key={lab} tone="exec">
-                        {lab}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </article>
-        ))}
 
-        <h2 className="kicker mt-14">In development</h2>
-        <p className="mt-2 max-w-2xl text-[14.5px] text-fg-muted">
-          These paths are planned and scheduled by milestone (see the project plan on GitHub). They
-          are listed so you can see where the curriculum is going; they are not linked until they
-          work.
-        </p>
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {upcoming.map((path) => (
-            <article
-              key={path.id}
-              id={path.id}
-              className="scroll-mt-20 rounded-xl border border-ink-600 bg-ink-900/40 p-5"
+      <div className="mx-auto max-w-[1240px] px-4 py-12 sm:px-6">
+        {/* The first question */}
+        <section
+          aria-labelledby="first-question"
+          className="grid gap-8 rounded-2xl border border-exec-500/40 bg-ink-900/60 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]"
+        >
+          <div>
+            <p className="text-[14px] text-exec-300">Begin here · about 21 minutes</p>
+            <h2
+              id="first-question"
+              className="mt-2 font-serif text-[32px] leading-tight text-fg sm:text-[38px]"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-mono text-[12px] text-fg-subtle">Path {path.code}</p>
-                  <h3 className="mt-1 font-serif text-[22px] text-fg">{path.title}</h3>
-                </div>
-                <Badge>In development · {path.milestone}</Badge>
-              </div>
-              <p className="mt-2 text-[14.5px] text-fg-muted">
-                <InlineRichText text={path.summary} />
+              {FIRST_RUN.title}
+            </h2>
+            <p className="mt-3 max-w-xl text-[17px] leading-relaxed text-fg-muted">
+              {FIRST_RUN.summary}
+            </p>
+            <ButtonLink
+              to={chaptersDone && next ? `/start?chapter=${next.id}` : '/start'}
+              variant="primary"
+              size="lg"
+              className="mt-6"
+            >
+              {chaptersDone === 0
+                ? 'Start the first lesson'
+                : next
+                  ? `Continue with chapter ${FIRST_RUN.chapters.indexOf(next) + 1}`
+                  : 'Review what you learned'}
+              <ArrowRight size={17} aria-hidden />
+            </ButtonLink>
+          </div>
+          <ol className="space-y-1 self-center" aria-label="Chapters">
+            {FIRST_RUN.chapters.map((chapter, i) => (
+              <li key={chapter.id}>
+                <Link
+                  to={`/start?chapter=${chapter.id}`}
+                  className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-[15px] text-fg-muted hover:bg-ink-850 hover:text-fg"
+                >
+                  <span
+                    className={cn(
+                      'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-[11.5px]',
+                      chapter.id in done ? 'border-ok-500/60 text-ok-300' : 'border-ink-500',
+                    )}
+                  >
+                    {chapter.id in done ? <Check size={13} aria-label="Completed" /> : i + 1}
+                  </span>
+                  {chapter.title}
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* Next questions */}
+        <section aria-labelledby="next-questions" className="mt-16">
+          <h2 id="next-questions" className="font-serif text-[30px] text-fg">
+            Then follow your curiosity
+          </h2>
+          <p className="mt-2 max-w-2xl text-[16px] text-fg-muted">
+            In a sensible order, but take them in any order you like. Each links to what answers it
+            today; dedicated laboratories are on their way.
+          </p>
+          <ol className="mt-8 grid gap-5 md:grid-cols-2">
+            {QUESTION_PATHS.map((path, i) => (
+              <QuestionCard key={path.id} path={path} number={i + 2} />
+            ))}
+          </ol>
+        </section>
+
+        {/* Progress */}
+        <section aria-labelledby="your-progress" className="mt-16 border-t border-ink-700 pt-10">
+          <h2 id="your-progress" className="font-serif text-[26px] text-fg">
+            Your progress
+          </h2>
+          <p className="mt-1 text-[14px] text-fg-subtle">Stored only in this browser.</p>
+          <dl className="mt-5 grid max-w-3xl gap-4 sm:grid-cols-3">
+            <div>
+              <dt className="text-[13.5px] text-fg-muted">First lesson</dt>
+              <dd className="mt-0.5 text-[22px] text-fg tabular">
+                {chaptersDone} / {FIRST_RUN.chapters.length} chapters
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[13.5px] text-fg-muted">Parts of the JVM explored</dt>
+              <dd className="mt-0.5 text-[22px] text-fg tabular">
+                {explored} / {COMPONENT_LIST.length}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[13.5px] text-fg-muted">Marked as understood</dt>
+              <dd className="mt-0.5 text-[22px] text-fg tabular">
+                {Object.keys(progress.understood).length}
+              </dd>
+            </div>
+          </dl>
+          {progress.bookmarks.length > 0 && (
+            <div className="mt-6">
+              <p className="flex items-center gap-1.5 text-[14px] text-fg-muted">
+                <Bookmark size={14} aria-hidden /> Bookmarks
               </p>
-              <ul className="mt-3 space-y-1 text-[13.5px] text-fg-subtle">
-                {path.topics.map((topic) => (
-                  <li key={topic}>· {topic}</li>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {progress.bookmarks.map((item) => (
+                  <li key={item.key}>
+                    <Link
+                      to={item.href}
+                      className="inline-block rounded-md border border-ink-600 px-2.5 py-1 text-[13.5px] text-fg-muted hover:border-exec-400 hover:text-fg"
+                    >
+                      {item.title}
+                    </Link>
+                  </li>
                 ))}
               </ul>
-              {path.labs.length > 0 && (
-                <p className="mt-3 text-[13px] text-fg-subtle">
-                  Planned: <span className="text-fg-muted">{path.labs.join(' · ')}</span>
+            </div>
+          )}
+        </section>
+
+        {/* The full curriculum, for reference */}
+        <section aria-labelledby="curriculum" className="mt-16 border-t border-ink-700 pt-10">
+          <h2 id="curriculum" className="font-serif text-[26px] text-fg">
+            The full curriculum, by subject
+          </h2>
+          <p className="mt-2 max-w-2xl text-[15px] text-fg-muted">
+            For readers who prefer to work through the JVM topic by topic. Laboratories are released
+            one milestone at a time and are linked only once they work.
+          </p>
+          <ul className="mt-6 grid gap-3 md:grid-cols-2">
+            {LEARNING_PATHS.map((path) => (
+              <li
+                key={path.id}
+                id={path.id}
+                className="scroll-mt-20 rounded-xl border border-ink-600 bg-ink-900/40 p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <h3 className="text-[16.5px] font-medium text-fg">
+                    {path.route ? (
+                      <Link to={path.route} className="hover:text-exec-200">
+                        {path.title}
+                      </Link>
+                    ) : (
+                      path.title
+                    )}
+                  </h3>
+                  {path.route ? (
+                    <Badge tone="ok">Available</Badge>
+                  ) : (
+                    <Badge>In development · {path.milestone}</Badge>
+                  )}
+                </div>
+                <p className="mt-1.5 text-[14px] text-fg-muted">
+                  <InlineRichText text={path.summary} />
                 </p>
-              )}
-            </article>
-          ))}
-        </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </>
+  );
+}
+
+function QuestionCard({ path, number }: { path: QuestionPath; number: number }) {
+  return (
+    <li id={path.id} className="scroll-mt-20 rounded-xl border border-ink-600 bg-ink-900/40 p-5">
+      <p className="font-mono text-[12.5px] text-fg-subtle">{number}</p>
+      <h3 className="mt-1 font-serif text-[23px] leading-snug text-fg">{path.question}</h3>
+      <p className="mt-2 text-[15px] leading-relaxed text-fg-muted">
+        <InlineRichText text={path.summary} />
+      </p>
+      {path.now.length > 0 && (
+        <ul className="mt-4 space-y-1.5">
+          {path.now.map((item) => {
+            const Icon = KIND_ICON[item.kind];
+            return (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  className="group inline-flex items-start gap-2 text-[14.5px] text-exec-300 hover:text-exec-200"
+                >
+                  <Icon size={15} aria-hidden className="mt-1 shrink-0" />
+                  <span className="underline decoration-exec-500/40 underline-offset-4 group-hover:decoration-exec-300">
+                    {item.label}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {path.later && (
+        <p className="mt-3 text-[13.5px] text-fg-subtle">
+          Coming later: {path.later.label} ({path.later.milestone})
+        </p>
+      )}
+    </li>
   );
 }

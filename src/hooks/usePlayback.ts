@@ -10,11 +10,14 @@ export function usePlayback({
   total,
   onStep,
   resetKey,
+  stepMs,
 }: {
   step: number;
   total: number;
   onStep: (step: number) => void;
   resetKey: string;
+  /** Milliseconds per step at 1× (defaults to the scenario timeline's length). */
+  stepMs?: number;
 }) {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<playback.PlaybackSpeed>(1);
@@ -28,13 +31,16 @@ export function usePlayback({
 
   useEffect(() => {
     if (!playing) return;
-    const timer = window.setTimeout(() => {
-      const nextState = playback.next({ step, total, playing });
-      onStep(nextState.step);
-      if (!nextState.playing) setPlaying(false);
-    }, playback.stepDuration(speed));
+    const timer = window.setTimeout(
+      () => {
+        const nextState = playback.next({ step, total, playing });
+        onStep(nextState.step);
+        if (!nextState.playing) setPlaying(false);
+      },
+      playback.stepDuration(speed, stepMs),
+    );
     return () => window.clearTimeout(timer);
-  }, [playing, step, total, speed, onStep]);
+  }, [playing, step, total, speed, onStep, stepMs]);
 
   const apply = (state: playback.PlaybackState) => {
     if (state.step !== step) onStep(state.step);

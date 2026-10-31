@@ -19,8 +19,9 @@ const COMPONENT_EXAMPLE = `{
   provenance: 'spec',            // 'spec' | 'hotspot' | 'platform'
   scope: 'per-thread',
   summary: 'A per-frame LIFO scratch stack ...',
-  beginner: 'The JVM is a stack machine ...',
-  technical: 'JVMS §2.6.2: ... [[verification|The verifier]] proves ...',
+  simple: 'The JVM is a stack machine ...',  // no programming knowledge needed
+  // developer: '...',              optional: code, APIs, what you can observe
+  deep: 'JVMS §2.6.2: ... [[verification|The verifier]] proves ...',
   purpose: '...',
   internals: ['...'],
   inputs: ['...'],
@@ -28,6 +29,21 @@ const COMPONENT_EXAMPLE = `{
   practice: '...',
   misconceptions: [{ myth: '...', truth: '...' }],
   references: [{ source: 'jvms-2.6.2' }],
+}`;
+
+const TEACHING_EXAMPLE = `heap: {
+  developer: 'Every \`new\`, and every array, allocates in the heap. ...',
+  analogy: {
+    picture: 'A big shared warehouse. Each object is a box on a shelf, ...',
+    mapping: [
+      { picture: 'The warehouse', real: 'The heap' },
+      { picture: 'A claim ticket', real: 'A reference, held by a variable or a field' },
+      // ...
+    ],
+    limits: 'A ticket is not a shelf number you can do arithmetic with: ...',
+  },
+  demo: 'memory',                   // a lesson exhibit, shown under "See it working"
+  check: { id: 'check-heap', prompt: '...', options: [/* one correct */] },
 }`;
 
 export function ContributingPage() {
@@ -80,6 +96,15 @@ export function ContributingPage() {
               <code>src/modules/jvm/layout.ts</code>: coordinates and connector routes, kept apart
               from the content.
             </li>
+            <li>
+              <code>src/content/jvm/teaching.ts</code>: the teaching layer of the twelve core
+              concepts (developer explanation, analogy, demo and check question).
+            </li>
+            <li>
+              <code>src/content/lesson/firstRun.ts</code>, <code>src/modules/lesson/</code> and{' '}
+              <code>src/simulators/</code>: the Start here lesson, its interactive exhibits and the
+              pure models behind them.
+            </li>
           </ul>
           <p>
             A component entry looks like this (types are checked, and integrity tests check every
@@ -90,6 +115,36 @@ export function ContributingPage() {
             language="text"
             code={COMPONENT_EXAMPLE}
             title="src/content/jvm/components/runtimeData.ts (excerpt)"
+          />
+        </Block>
+        <Block title="Writing explanations">
+          <ul>
+            <li>
+              Write each explanation at three levels that describe the same machine:{' '}
+              <strong>Simple</strong> (no programming knowledge, one new term at a time),{' '}
+              <strong>Developer</strong> (code and what you can observe) and{' '}
+              <strong>Deep dive</strong> (specification sections, HotSpot mechanisms, bytecode and
+              flags). Simple is short, never false.
+            </li>
+            <li>
+              An analogy maps each part of its picture to the real concept and says where the
+              picture stops being accurate. It opens a door; it never replaces the explanation.
+            </li>
+            <li>
+              Every interactive teaches cause and effect: the learner acts, the visual changes, and
+              a caption says what changed and why. It can be stepped, paused and replayed.
+            </li>
+            <li>
+              Disclose depth, never delete it: technical detail goes behind “Explore the technical
+              details” rather than into the default view.
+            </li>
+          </ul>
+          <p>A core concept’s teaching entry has this shape:</p>
+          <CodeBlock
+            className="not-prose mt-3"
+            language="text"
+            code={TEACHING_EXAMPLE}
+            title="src/content/jvm/teaching.ts (excerpt)"
           />
         </Block>
         <Block title="Accuracy checklist">

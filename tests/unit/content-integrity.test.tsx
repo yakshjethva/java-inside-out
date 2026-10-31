@@ -5,7 +5,11 @@ import { childrenOf, COMPONENT_IDS, COMPONENTS, isAncestor, type ComponentId } f
 import { ANATOMY_QUIZ } from '@/content/jvm/quiz';
 import { RELATIONSHIPS } from '@/content/jvm/relationships';
 import { SCENARIOS } from '@/content/jvm/scenarios';
+import { JVM_REGIONS } from '@/content/jvm/regions';
+import { FIRST_RUN, FIRST_RUN_QUIZ } from '@/content/lesson/firstRun';
 import { LEARNING_PATHS } from '@/content/paths';
+import { QUESTION_PATHS } from '@/content/questions';
+import { PROJECT_STATUS } from '@/content/status';
 import { REFERENCE_IDS, REFERENCES } from '@/data/references';
 import { GLOSSARY, getGlossaryEntry } from '@/glossary';
 import { contains, orthogonalRoute, anchorPoint, type Point, type Rect } from '@/lib/geometry';
@@ -21,8 +25,9 @@ function allRichText(): { where: string; text: string }[] {
   for (const doc of Object.values(COMPONENTS) as ComponentDoc[]) {
     const w = `component ${doc.id}`;
     add(w, doc.summary);
-    add(w, doc.beginner);
-    add(w, doc.technical);
+    add(w, doc.simple);
+    if (doc.developer) add(w, doc.developer);
+    add(w, doc.deep);
     add(w, doc.purpose);
     add(w, doc.practice);
     add(w, doc.accuracyNote);
@@ -33,13 +38,52 @@ function allRichText(): { where: string; text: string }[] {
     doc.errors?.forEach((e) => add(w, e.when));
     add(w, doc.specVsImpl?.spec);
     add(w, doc.specVsImpl?.implementation);
+    if (doc.analogy) {
+      add(w, doc.analogy.picture);
+      add(w, doc.analogy.limits);
+      doc.analogy.mapping.forEach((m) => add(w, m.real));
+    }
+    if (doc.check) {
+      add(w, doc.check.prompt);
+      doc.check.options.forEach((o) => {
+        add(w, o.text);
+        add(w, o.explanation);
+      });
+    }
+  }
+  for (const chapter of FIRST_RUN.chapters) {
+    const w = `lesson chapter ${chapter.id}`;
+    add(w, chapter.explanation.simple);
+    add(w, chapter.explanation.developer);
+    add(w, chapter.explanation.deep);
+    add(w, chapter.tryIt);
+    add(w, chapter.accuracyNote);
+    add(w, chapter.term.definition);
+    add(w, chapter.prediction.prompt);
+    chapter.prediction.options.forEach((o) => {
+      add(w, o.text);
+      add(w, o.feedback);
+    });
+    add(w, chapter.check.prompt);
+    chapter.check.options.forEach((o) => {
+      add(w, o.text);
+      add(w, o.explanation);
+    });
+  }
+  for (const q of FIRST_RUN_QUIZ.questions) {
+    add(`lesson quiz ${q.id}`, q.prompt);
+    q.options.forEach((o) => {
+      add(`lesson quiz ${q.id}`, o.text);
+      add(`lesson quiz ${q.id}`, o.explanation);
+    });
   }
   for (const rel of RELATIONSHIPS) add(`relationship ${rel.id}`, rel.description);
   for (const scenario of SCENARIOS) {
     add(`scenario ${scenario.id}`, scenario.accuracyNote);
     for (const step of scenario.steps) {
-      add(`step ${scenario.id}/${step.id}`, step.beginner);
-      add(`step ${scenario.id}/${step.id}`, step.technical);
+      add(`step ${scenario.id}/${step.id}`, step.simple);
+      if (step.developer) add(`step ${scenario.id}/${step.id}`, step.developer);
+      add(`step ${scenario.id}/${step.id}`, step.deep);
       add(`step ${scenario.id}/${step.id}`, step.note);
     }
   }
@@ -52,8 +96,9 @@ function allRichText(): { where: string; text: string }[] {
   }
   for (const entry of GLOSSARY) {
     const w = `glossary ${entry.id}`;
-    add(w, entry.beginner);
-    add(w, entry.technical);
+    add(w, entry.simple);
+    if (entry.developer) add(w, entry.developer);
+    add(w, entry.deep);
     add(w, entry.whyItExists);
     add(w, entry.misconception?.truth);
   }
@@ -74,6 +119,8 @@ function allCitations(): { where: string; citation: Citation }[] {
   for (const e of GLOSSARY) e.references?.forEach((c) => out.push({ where: e.id, citation: c }));
   for (const d of Object.values(DISSECTIONS))
     d!.references.forEach((c) => out.push({ where: d!.id, citation: c }));
+  for (const chapter of FIRST_RUN.chapters)
+    chapter.references.forEach((c) => out.push({ where: `lesson ${chapter.id}`, citation: c }));
   return out;
 }
 
@@ -91,8 +138,8 @@ describe('anatomy components', () => {
   it('has substantive content for every component', () => {
     for (const doc of Object.values(COMPONENTS) as ComponentDoc[]) {
       expect(doc.summary.length, doc.id).toBeGreaterThan(30);
-      expect(doc.beginner.length, doc.id).toBeGreaterThan(80);
-      expect(doc.technical.length, doc.id).toBeGreaterThan(120);
+      expect(doc.simple.length, doc.id).toBeGreaterThan(80);
+      expect(doc.deep.length, doc.id).toBeGreaterThan(120);
       expect(doc.purpose.length, doc.id).toBeGreaterThan(20);
       expect(doc.internals.length, doc.id).toBeGreaterThan(0);
       expect(doc.inputs.length, doc.id).toBeGreaterThan(0);
@@ -294,5 +341,125 @@ describe('dissections', () => {
         expect(documented.has(id), `${dissection!.id}: part "${id}" has no description`).toBe(true);
       unmount();
     }
+  });
+});
+
+describe('the teaching layer', () => {
+  const CORE: ComponentId[] = [
+    'jvm',
+    'class-loader-subsystem',
+    'class-file',
+    'runtime-data-areas',
+    'heap',
+    'jvm-stack',
+    'stack-frame',
+    'method-area',
+    'interpreter',
+    'jit-compiler',
+    'garbage-collector',
+    'jni',
+  ];
+
+  it('gives every core concept all three levels, a mapped analogy with limits and a question', () => {
+    for (const id of CORE) {
+      const doc = COMPONENTS[id];
+      expect(doc.simple.length, id).toBeGreaterThan(80);
+      expect(doc.developer?.length ?? 0, id).toBeGreaterThan(150);
+      expect(doc.deep.length, id).toBeGreaterThan(120);
+      expect(doc.analogy?.mapping.length ?? 0, id).toBeGreaterThanOrEqual(2);
+      expect(doc.analogy?.limits.length ?? 0, id).toBeGreaterThan(60);
+      expect(
+        doc.check?.options.filter((o) => o.correct),
+        id,
+      ).toHaveLength(1);
+    }
+  });
+
+  it('names the six regions after real components and keeps them in sync with the plate', () => {
+    expect(JVM_REGIONS.map((r) => r.id)).toEqual([
+      'class-loader-subsystem',
+      'runtime-data-areas',
+      'execution-engine',
+      'garbage-collector',
+      'native-interface',
+      'platform',
+    ]);
+    for (const region of JVM_REGIONS) {
+      expect(COMPONENTS[region.id], region.id).toBeDefined();
+      expect(childrenOf(region.id).length, region.id).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('the first lesson', () => {
+  it('has seven chapters, each with one right prediction, one right answer and sources', () => {
+    expect(FIRST_RUN.chapters.map((c) => c.id)).toEqual([
+      'program',
+      'compiler',
+      'jvm',
+      'loading',
+      'memory',
+      'execution',
+      'gc',
+    ]);
+    for (const chapter of FIRST_RUN.chapters) {
+      expect(
+        chapter.prediction.options.filter((o) => o.correct),
+        chapter.id,
+      ).toHaveLength(1);
+      expect(
+        chapter.check.options.filter((o) => o.correct),
+        chapter.id,
+      ).toHaveLength(1);
+      expect(chapter.explanation.developer, chapter.id).toBeTruthy();
+      expect(chapter.references.length, chapter.id).toBeGreaterThan(0);
+      expect(getGlossaryEntry(chapter.term.glossaryId), chapter.term.glossaryId).toBeDefined();
+      for (const listing of chapter.listings ?? [])
+        expect(listing.verifiedWith, listing.id).toMatch(/OpenJDK 25\.0\.4/);
+    }
+  });
+
+  it('has a recap check with exactly one right answer per question', () => {
+    for (const q of FIRST_RUN_QUIZ.questions)
+      expect(
+        q.options.filter((o) => o.correct),
+        q.id,
+      ).toHaveLength(1);
+  });
+
+  it('places every chapter on the JVM map, each at a different component', () => {
+    const components = FIRST_RUN.chapters.map((c) => c.component);
+    for (const id of components) expect(COMPONENT_IDS, String(id)).toContain(id);
+    expect(new Set(components).size).toBe(components.length);
+  });
+});
+
+describe('learning paths and project status', () => {
+  const routes = new Set(['', ...STATIC_ROUTES.map((r) => r.path)]);
+  const routeOf = (to: string) => to.replace(/^\//, '').split(/[?#]/)[0]!;
+
+  it('link question paths only to pages that exist', () => {
+    for (const path of QUESTION_PATHS)
+      for (const item of path.now) expect(routes.has(routeOf(item.to)), item.to).toBe(true);
+  });
+
+  it('link only available experiences from the project status', () => {
+    for (const item of PROJECT_STATUS)
+      if (item.to) expect(routes.has(routeOf(item.to)), item.to).toBe(true);
+  });
+
+  it('point explorer deep links at real components and walkthroughs', () => {
+    for (const path of QUESTION_PATHS)
+      for (const item of path.now) {
+        const params = new URLSearchParams(item.to.split('?')[1] ?? '');
+        const c = params.get('c');
+        const s = params.get('s');
+        if (c) expect(COMPONENT_IDS.includes(c as ComponentId), item.to).toBe(true);
+        if (s)
+          expect(
+            SCENARIOS.some((scenario) => scenario.id === s),
+            item.to,
+          ).toBe(true);
+      }
   });
 });

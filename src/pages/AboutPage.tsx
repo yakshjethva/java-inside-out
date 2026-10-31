@@ -1,11 +1,13 @@
 import { Link } from 'react-router';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Badge } from '@/components/ui/Badge';
+import { PROJECT_STATUS } from '@/content/status';
 import { SITE } from '@/data/site';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
+function Block({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <section className="border-t border-ink-700 py-8 first:border-t-0">
+    <section id={id} className="scroll-mt-20 border-t border-ink-700 py-8 first:border-t-0">
       <h2 className="font-serif text-[26px] text-fg">{title}</h2>
       <div className="prose-ij mt-3 max-w-3xl text-[15.5px]">{children}</div>
     </section>
@@ -32,9 +34,10 @@ export function AboutPage() {
             happens when a line of Java runs.
           </p>
           <p>
-            Inside Java draws the machine as an anatomy plate you can take apart. Every part is
-            selectable, connected, dissected and explained at two levels, and every walkthrough uses
-            real output from a real JDK.
+            Inside Java starts with a question a beginner already has, follows one small program
+            through the machine, and then lets you take the machine apart. Every part is selectable,
+            connected and dissected, explained at three levels (simple, developer and deep dive),
+            and every walkthrough uses real output from a real JDK.
           </p>
         </Block>
         <Block title="Versions">
@@ -79,6 +82,51 @@ export function AboutPage() {
           <p>
             Found an error? Please <a href={`${SITE.repository}/issues`}>open an issue</a> with a
             source. Corrections are the most valuable contribution.
+          </p>
+        </Block>
+        <Block title="Project status" id="project-status">
+          <p>
+            Inside Java is built one milestone at a time, and only finished experiences are linked
+            from the site. This is where things stand.
+          </p>
+          <table className="mt-4 w-full border-collapse text-left text-[14.5px]">
+            <thead>
+              <tr className="border-b border-ink-600 text-[13px] text-fg-subtle">
+                <th scope="col" className="py-2 pr-4 font-medium">
+                  Experience
+                </th>
+                <th scope="col" className="hidden py-2 pr-4 font-medium sm:table-cell">
+                  What you do
+                </th>
+                <th scope="col" className="py-2 font-medium">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {PROJECT_STATUS.map((item) => (
+                <tr key={item.name} className="border-b border-ink-700 align-top">
+                  <td className="py-2.5 pr-4 text-fg">
+                    {item.to ? <Link to={item.to}>{item.name}</Link> : item.name}
+                    <span className="mt-0.5 block text-[13px] text-fg-muted sm:hidden">
+                      {item.what}
+                    </span>
+                  </td>
+                  <td className="hidden py-2.5 pr-4 text-fg-muted sm:table-cell">{item.what}</td>
+                  <td className="py-2.5 whitespace-nowrap">
+                    {item.to ? (
+                      <Badge tone="ok">Available</Badge>
+                    ) : (
+                      <Badge>In development · {item.milestone}</Badge>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p>
+            The source code, the plan and every change are public in the{' '}
+            <a href={SITE.repository}>repository on GitHub</a>.
           </p>
         </Block>
         <Block title="Privacy and hosting">

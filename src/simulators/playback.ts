@@ -44,6 +44,7 @@ export function togglePlay(state: PlaybackState): PlaybackState {
   return { ...state, playing: true };
 }
 
-export function stepDuration(speed: PlaybackSpeed): number {
-  return BASE_STEP_MS / speed;
+/** Milliseconds a step stays on screen at `speed`; short exhibits pass their own base length. */
+export function stepDuration(speed: PlaybackSpeed, baseMs: number = BASE_STEP_MS): number {
+  return baseMs / speed;
 }

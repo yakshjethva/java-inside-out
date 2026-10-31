@@ -47,11 +47,17 @@ npm run test:e2e
 | Path                                    | Contents                                                         |
 | --------------------------------------- | ---------------------------------------------------------------- |
 | `src/content/jvm/components/*.ts`       | One entry per anatomy component: explanations, example, sources  |
+| `src/content/jvm/teaching.ts`           | The teaching layer of the core concepts (levels, analogy, check) |
+| `src/content/jvm/regions.ts`            | The six main parts shown by the explorer overview                |
+| `src/content/lesson/firstRun.ts`        | The Start here lesson: chapters, predictions, listings, quiz     |
+| `src/modules/lesson/exhibits/`          | The lesson's interactive exhibits (reused by the inspector)      |
+| `src/simulators/`                       | Pure models behind the exhibits, with unit tests                 |
 | `src/content/jvm/ids.ts`                | The list of component ids                                        |
 | `src/content/jvm/relationships.ts`      | Connectors between components                                    |
 | `src/content/jvm/scenarios.ts`          | Execution walkthroughs, step by step                             |
 | `src/content/jvm/quiz.ts`               | The anatomy knowledge check                                      |
-| `src/content/paths.ts`                  | Learning paths                                                   |
+| `src/content/paths.ts`                  | The curriculum by subject (Learn page)                           |
+| `src/content/questions.ts`              | The question-led paths (Learn page)                              |
 | `src/glossary/terms.ts`                 | Glossary entries                                                 |
 | `src/data/references.ts`                | The source registry                                              |
 | `src/modules/jvm/layout.ts`             | Plate coordinates and connector routes (kept apart from content) |
@@ -67,9 +73,36 @@ Content is plain TypeScript data with a small inline syntax, so it stays readabl
 - `[label](https://…)` for an external link (HTTPS only);
 - a blank line starts a new paragraph; lines starting with `- ` form a list.
 
-Write a **beginner** explanation that assumes no prior knowledge and a **technical** explanation
-that names the specification section or HotSpot mechanism. Prefer short sentences and concrete
-examples over adjectives.
+Every explanation exists at three levels that describe the same machine:
+
+- `simple`: assumes no programming knowledge. Short sentences, familiar examples, one new term
+  at a time. Short, but never false: no "primitives live on the stack" or "objects are freed
+  when they go out of scope".
+- `developer` (optional): for people who write Java. Real code and APIs, and what a developer
+  can observe (`javap`, logs, errors, stack traces). When it is missing, the site shows the deep
+  dive and says the developer level is not written yet.
+- `deep`: names the JVMS or JLS section or the HotSpot mechanism, with bytecode, flags and limits.
+
+Prefer short sentences and concrete examples over adjectives.
+
+### Analogies and the teaching layer
+
+The core concepts (JVM, class loader subsystem, class file, runtime data areas, heap, JVM stack,
+stack frame, method area, interpreter, JIT compiler, garbage collector, JNI) have a teaching
+layer in `src/content/jvm/teaching.ts`: developer text, an analogy, a check question and, where
+one exists, an interactive demo from the lesson.
+
+An `analogy` needs all three parts: the `picture`, a `mapping` from each part of the picture to
+the real concept, and `limits`, which says where the picture stops being accurate. An analogy
+opens a door; it never replaces the technical explanation. The integrity tests reject a core
+concept without all three levels, a mapped analogy with limits, and a question.
+
+### Interactive visualizations
+
+Every interactive teaches cause and effect: the learner does something, the visual changes, and
+a caption says what changed and why. Sequences can be restarted, stepped backwards and forwards,
+and paused. Put the logic in a pure function in `src/simulators` and write its unit tests first.
+If the visual simplifies anything, its accuracy note says what.
 
 ### Adding a component
 
@@ -79,7 +112,8 @@ examples over adjectives.
 3. Give it a rectangle in `NODE_RECTS` in `src/modules/jvm/layout.ts`, inside its parent and
    clear of its siblings.
 4. Add relationships, if any, to `src/content/jvm/relationships.ts`.
-5. Run `npm test`: the integrity tests fail with a precise message if anything is missing.
+5. If it is a core concept, add its entry to `src/content/jvm/teaching.ts`.
+6. Run `npm test`: the integrity tests fail with a precise message if anything is missing.
 
 ## Accuracy checklist
 
@@ -108,6 +142,9 @@ Every pull request that changes technical content should be able to answer yes t
 - Every interactive element works with a keyboard, has an accessible name and a visible focus
   state.
 - Respect reduced motion: animation must never be required to understand something.
+- Disclose depth, never delete it. Keep default views small: new technical detail in the
+  inspector goes inside "Explore the technical details", and new explorer tools go in
+  "Advanced options".
 - Layouts must work from a 360 px wide phone to a large desktop.
 - New runtime dependencies need a good reason: say why in the pull request, and add them to
   `THIRD_PARTY_NOTICES.md`.

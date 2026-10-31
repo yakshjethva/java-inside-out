@@ -12,10 +12,9 @@ export const classLoadingComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Finds class bytes, turns them into run-time classes, links them and runs their static initialization, on demand.',
-    beginner:
+    simple:
       "Before Java can use a class, it has to find the class's compiled bytes and turn them into something it can run. This subsystem does that work lazily, the first time a class is actually needed: it **loads** the class, **links** it (checks and prepares it) and **initializes** it (runs its static setup code).",
-    technical:
-      'JVMS Chapter 5 defines three steps. [[loading|Loading]] creates a class from a binary representation using a class loader. [[linking|Linking]] combines the class into the run-time state: [[verification]], [[preparation]] and, possibly later, [[resolution]]. [[initialization|Initialization]] executes the class initialization method `<clinit>`.\n\nA run-time class is identified by its binary name **and its defining class loader**, so the same bytes loaded by two loaders produce two distinct classes. HotSpot records loaded classes per loader (`ClassLoaderData`, `SystemDictionary`) and stores their metadata in Metaspace.',
+    deep: 'JVMS Chapter 5 defines three steps. [[loading|Loading]] creates a class from a binary representation using a class loader. [[linking|Linking]] combines the class into the run-time state: [[verification]], [[preparation]] and, possibly later, [[resolution]]. [[initialization|Initialization]] executes the class initialization method `<clinit>`.\n\nA run-time class is identified by its binary name **and its defining class loader**, so the same bytes loaded by two loaders produce two distinct classes. HotSpot records loaded classes per loader (`ClassLoaderData`, `SystemDictionary`) and stores their metadata in Metaspace.',
     purpose:
       "Load only what the program uses, keep untrusted bytes from breaking the JVM's type safety, and allow isolation (plugins, application servers) through separate loaders.",
     internals: [
@@ -88,10 +87,9 @@ hello`,
     provenance: 'spec',
     scope: 'shared',
     summary: 'A loader asks its parent first; built-in loaders since JDK 9 first route by module.',
-    beginner:
+    simple:
       'When a class loader is asked for a class, it first asks its parent loader. Only if the parent cannot provide the class does it look for the class itself. Because the request travels up first, core classes like `java.lang.String` always come from the JDK and cannot be replaced by a file on your class path.',
-    technical:
-      "The classic algorithm in `ClassLoader.loadClass`: check `findLoadedClass`, delegate to the parent, then call `findClass`. The JDK's built-in loaders refine it (`BuiltinClassLoader.loadClassOrNull`, JDK 9+): they first map the class's package to a module. If the package belongs to a named module defined to a built-in loader, the request goes **directly to that loader**, which need not be the parent. Only packages in no named module are delegated to the parent and then searched on the class path.\n\nUser-defined loaders may override `loadClass` (for example child-first web-application loaders). That is legal, but the JVM still enforces loading constraints so a type name cannot mean two different classes across a method call.",
+    deep: "The classic algorithm in `ClassLoader.loadClass`: check `findLoadedClass`, delegate to the parent, then call `findClass`. The JDK's built-in loaders refine it (`BuiltinClassLoader.loadClassOrNull`, JDK 9+): they first map the class's package to a module. If the package belongs to a named module defined to a built-in loader, the request goes **directly to that loader**, which need not be the parent. Only packages in no named module are delegated to the parent and then searched on the class path.\n\nUser-defined loaders may override `loadClass` (for example child-first web-application loaders). That is legal, but the JVM still enforces loading constraints so a type name cannot mean two different classes across a method call.",
     purpose:
       'Keep core platform classes authoritative, avoid loading a class twice, and give each loader a predictable view of types.',
     internals: [
@@ -150,10 +148,9 @@ app`,
     scope: 'shared',
     summary:
       'Built into the JVM; defines the core platform classes such as java.lang.Object and String.',
-    beginner:
+    simple:
       'The first loader, built into the JVM itself. It loads the most fundamental classes, like `Object` and `String`, which every other class depends on. Java code sees it as `null`.',
-    technical:
-      'JVMS §5.3.1: the bootstrap loader is supplied by the JVM and finds classes in an implementation-dependent way. In JDK 25 it defines the classes of the boot modules listed in `module-loader-map.conf`, including `java.base`, `java.logging`, `java.xml`, `java.desktop`, `java.management` and `jdk.unsupported`. HotSpot reads them from the runtime image (`lib/modules`, a jimage file, JEP 220) — in practice most are mapped directly from the default [[cds|CDS]] archive. Classes it defines are never unloaded.',
+    deep: 'JVMS §5.3.1: the bootstrap loader is supplied by the JVM and finds classes in an implementation-dependent way. In JDK 25 it defines the classes of the boot modules listed in `module-loader-map.conf`, including `java.base`, `java.logging`, `java.xml`, `java.desktop`, `java.management` and `jdk.unsupported`. HotSpot reads them from the runtime image (`lib/modules`, a jimage file, JEP 220) — in practice most are mapped directly from the default [[cds|CDS]] archive. Classes it defines are never unloaded.',
     purpose: 'Bring up the core class library with no Java code available yet to do the loading.',
     internals: [
       'Implemented in the JVM (C++ in HotSpot), not as a Java object',
@@ -196,10 +193,9 @@ app`,
     scope: 'shared',
     summary:
       'A JDK loader (since JDK 9) for platform modules not defined by the bootstrap loader, such as java.sql.',
-    beginner:
+    simple:
       'The middle loader. It loads parts of the Java platform that are not needed by every program, for example the database API in `java.sql`.',
-    technical:
-      'Returned by `ClassLoader.getPlatformClassLoader()` and named `"platform"`. In JDK 25 it defines the modules listed as `PLATFORM_MODULES` in `module-loader-map.conf`, including `java.sql`, `java.sql.rowset`, `java.net.http`, `java.scripting`, `java.xml.crypto` and `jdk.httpserver`. Its parent is the bootstrap loader, so `getParent()` returns `null`. It replaced the JDK 8 extension class loader; the extension mechanism (`jre/lib/ext`) no longer exists.',
+    deep: 'Returned by `ClassLoader.getPlatformClassLoader()` and named `"platform"`. In JDK 25 it defines the modules listed as `PLATFORM_MODULES` in `module-loader-map.conf`, including `java.sql`, `java.sql.rowset`, `java.net.http`, `java.scripting`, `java.xml.crypto` and `jdk.httpserver`. Its parent is the bootstrap loader, so `getParent()` returns `null`. It replaced the JDK 8 extension class loader; the extension mechanism (`jre/lib/ext`) no longer exists.',
     purpose:
       'Load platform modules with fewer privileges than the bootstrap loader and allow them to be upgraded or omitted with `jlink`.',
     internals: [
@@ -248,10 +244,9 @@ module java.sql`,
     scope: 'shared',
     summary:
       'The "system" class loader: loads your classes from the class path and the application module path.',
-    beginner:
+    simple:
       'The loader for your own code and the libraries you add. It looks in the folders and JAR files on the class path (`-cp`) and in modules on the module path.',
-    technical:
-      'Returned by `ClassLoader.getSystemClassLoader()` unless replaced with `-Djava.system.class.loader`; named `"app"`; its parent is the platform loader. It loads classes from `-cp`/`--class-path` (the unnamed module) and defines application modules from `--module-path`. The launcher uses it to load the main class, so `Main` and `Person` in our example are defined here.',
+    deep: 'Returned by `ClassLoader.getSystemClassLoader()` unless replaced with `-Djava.system.class.loader`; named `"app"`; its parent is the platform loader. It loads classes from `-cp`/`--class-path` (the unnamed module) and defines application modules from `--module-path`. The launcher uses it to load the main class, so `Main` and `Person` in our example are defined here.',
     purpose: 'Load the application and its libraries.',
     internals: [
       'Implemented in Java: `jdk.internal.loader.ClassLoaders$AppClassLoader`',
@@ -297,10 +292,9 @@ module java.sql`,
     scope: 'shared',
     summary:
       'Application-defined subclasses of ClassLoader used for isolation, plugins, hot reloading and generated code.',
-    beginner:
+    simple:
       'Programs can create their own class loaders, for example to load plugins from a folder, to keep two versions of a library apart, or to reload code without restarting.',
-    technical:
-      'A user-defined loader extends `java.lang.ClassLoader` and usually overrides `findClass`, calling `defineClass` with the class bytes (JVMS §5.3.2). Each loader forms its own namespace: a class is identified by name *and* defining loader. Application servers, OSGi, build tools and test frameworks rely on this. Many frameworks now define classes through `MethodHandles.Lookup.defineClass` or as [[hidden-class|hidden classes]] (JEP 371) instead of writing a loader.',
+    deep: 'A user-defined loader extends `java.lang.ClassLoader` and usually overrides `findClass`, calling `defineClass` with the class bytes (JVMS §5.3.2). Each loader forms its own namespace: a class is identified by name *and* defining loader. Application servers, OSGi, build tools and test frameworks rely on this. Many frameworks now define classes through `MethodHandles.Lookup.defineClass` or as [[hidden-class|hidden classes]] (JEP 371) instead of writing a loader.',
     purpose: 'Isolation, dynamic loading and code generation without restarting the JVM.',
     internals: [
       '`loadClass` (delegation policy), `findClass` (where bytes come from), `defineClass` (hand bytes to the JVM)',
@@ -360,10 +354,9 @@ System.out.println(a.getName() + " == " + b.getName() + " ? " + (a == b));`,
     provenance: 'spec',
     scope: 'shared',
     summary: "Finds a class's binary representation and creates the run-time class from it.",
-    beginner:
+    simple:
       "Loading means finding the class file's bytes and building an internal description of the class from them: its name, parent class, fields and methods.",
-    technical:
-      "JVMS §5.3: creating class C means constructing an implementation-specific internal representation in the method area. Deriving C from a class file (§5.3.5) checks the format (`ClassFormatError`) and version (`UnsupportedClassVersionError`), loads the superclass and superinterfaces (recursively), and records the defining loader. Array classes are created by the JVM itself, not loaded (§5.3.3).\n\nIn HotSpot, `ClassFileParser` builds an `InstanceKlass` (with `Method`s, `ConstMethod`s holding bytecode, and a `ConstantPool`) in Metaspace, allocates the `java.lang.Class` mirror in the heap, and registers the class in its loader's dictionary.",
+    deep: "JVMS §5.3: creating class C means constructing an implementation-specific internal representation in the method area. Deriving C from a class file (§5.3.5) checks the format (`ClassFormatError`) and version (`UnsupportedClassVersionError`), loads the superclass and superinterfaces (recursively), and records the defining loader. Array classes are created by the JVM itself, not loaded (§5.3.3).\n\nIn HotSpot, `ClassFileParser` builds an `InstanceKlass` (with `Method`s, `ConstMethod`s holding bytecode, and a `ConstantPool`) in Metaspace, allocates the `java.lang.Class` mirror in the heap, and registers the class in its loader's dictionary.",
     purpose: 'Turn bytes into a run-time class the rest of the JVM can refer to.',
     internals: [
       'Locate bytes (loader-specific) or map them from the CDS / AOT cache',
@@ -406,10 +399,9 @@ System.out.println(a.getName() + " == " + b.getName() + " ? " + (a == b));`,
     scope: 'shared',
     summary:
       'Prepares a loaded class for execution: verification, preparation and (lazy) resolution.',
-    beginner:
+    simple:
       'Linking gets a loaded class ready to run. The JVM checks that its bytecode is safe, reserves space for its static fields, and connects names in the code to the real classes, fields and methods.',
-    technical:
-      'JVMS §5.4: linking a class involves [[verification]] and [[preparation]] of the class, its direct superclass and superinterfaces, and [[resolution]] of symbolic references. The specification lets an implementation resolve eagerly or lazily, provided errors are thrown at the point in the program where the reference is used. HotSpot links a class before it is initialized and resolves references lazily, the first time each instruction executes. Since JDK 24 classes can be loaded and linked ahead of time into an AOT cache (JEP 483).',
+    deep: 'JVMS §5.4: linking a class involves [[verification]] and [[preparation]] of the class, its direct superclass and superinterfaces, and [[resolution]] of symbolic references. The specification lets an implementation resolve eagerly or lazily, provided errors are thrown at the point in the program where the reference is used. HotSpot links a class before it is initialized and resolves references lazily, the first time each instruction executes. Since JDK 24 classes can be loaded and linked ahead of time into an AOT cache (JEP 483).',
     purpose: 'Establish that the class is safe and complete before any of its code runs.',
     internals: ['Verification', 'Preparation', 'Resolution (may happen much later, per reference)'],
     inputs: ['A loaded class'],
@@ -434,10 +426,9 @@ System.out.println(a.getName() + " == " + b.getName() + " ? " + (a == b));`,
     provenance: 'spec',
     scope: 'shared',
     summary: 'Proves the bytecode is type-safe and structurally sound before it may run.',
-    beginner:
+    simple:
       "The JVM does not blindly trust class files: they might be corrupt or crafted to attack it. Verification checks every method's instructions to make sure they use values of the right types and cannot break the JVM.",
-    technical:
-      'JVMS §4.10 and §5.4.1. For class files of version 50 and above, the type-checking verifier uses the `StackMapTable` attribute: at each branch target the compiler records the types in locals and on the operand stack, so the verifier can check each method in a single linear pass. It proves, for example, that the operand stack never overflows `max_stack` or underflows, that every instruction receives operands of correct types, that objects are initialized (`<init>` called) before use, that branches stay inside the method, and that `final` fields and access rules are respected. Failure throws `VerifyError`.',
+    deep: 'JVMS §4.10 and §5.4.1. For class files of version 50 and above, the type-checking verifier uses the `StackMapTable` attribute: at each branch target the compiler records the types in locals and on the operand stack, so the verifier can check each method in a single linear pass. It proves, for example, that the operand stack never overflows `max_stack` or underflows, that every instruction receives operands of correct types, that objects are initialized (`<init>` called) before use, that branches stay inside the method, and that `final` fields and access rules are respected. Failure throws `VerifyError`.',
     purpose:
       'Let the interpreter and JIT skip run-time type checks safely, and stop malformed or hostile bytecode.',
     internals: [
@@ -468,10 +459,9 @@ System.out.println(a.getName() + " == " + b.getName() + " ? " + (a == b));`,
     scope: 'shared',
     summary:
       'Creates static fields and sets them to default values (0, null, false); runs no Java code.',
-    beginner:
+    simple:
       "The JVM reserves room for the class's static variables and fills them with default values: `0`, `false` or `null`. Your initial values (like `= 42`) are not assigned yet; that happens during initialization.",
-    technical:
-      "JVMS §5.4.2: preparation creates the static fields of a class or interface and initializes them to their default values. It executes no JVM code; explicit initializers run during [[initialization]]. Even `static final` fields with a `ConstantValue` attribute are assigned as part of initialization, immediately before `<clinit>` (JVMS §4.7.2), although `javac` usually inlines compile-time constants into the code that uses them. In HotSpot, static fields live inside the class's `java.lang.Class` mirror object in the Java heap.",
+    deep: "JVMS §5.4.2: preparation creates the static fields of a class or interface and initializes them to their default values. It executes no JVM code; explicit initializers run during [[initialization]]. Even `static final` fields with a `ConstantValue` attribute are assigned as part of initialization, immediately before `<clinit>` (JVMS §4.7.2), although `javac` usually inlines compile-time constants into the code that uses them. In HotSpot, static fields live inside the class's `java.lang.Class` mirror object in the Java heap.",
     purpose: 'Give every static field a well-defined value before any code can observe it.',
     internals: [
       'Allocate storage for static fields',
@@ -516,10 +506,9 @@ System.out.println(a.getName() + " == " + b.getName() + " ? " + (a == b));`,
     provenance: 'spec',
     scope: 'shared',
     summary: 'Replaces symbolic references (names) in the constant pool with direct references.',
-    beginner:
+    simple:
       'Bytecode refers to other classes, fields and methods by name, like an address book entry. Resolution looks up each name the first time it is used and remembers where it points, so later uses are fast.',
-    technical:
-      'JVMS §5.4.3: resolution determines concrete values from symbolic references in the [[runtime-constant-pool|run-time constant pool]]: classes (§5.4.3.1), fields, methods, interface methods, method types and handles, dynamically-computed constants and call sites. It triggers loading of referenced classes, applies access control (§5.4.4) and method selection. A successful result is cached; a failed resolution throws the same error on every later attempt.\n\nHotSpot resolves lazily at first execution and caches the outcome in the `ConstantPool` (resolved classes) and the constant pool cache (`ResolvedFieldEntry`, `ResolvedMethodEntry`, `ResolvedIndyEntry`). `invokedynamic` call sites are linked by running their bootstrap method once.',
+    deep: 'JVMS §5.4.3: resolution determines concrete values from symbolic references in the [[runtime-constant-pool|run-time constant pool]]: classes (§5.4.3.1), fields, methods, interface methods, method types and handles, dynamically-computed constants and call sites. It triggers loading of referenced classes, applies access control (§5.4.4) and method selection. A successful result is cached; a failed resolution throws the same error on every later attempt.\n\nHotSpot resolves lazily at first execution and caches the outcome in the `ConstantPool` (resolved classes) and the constant pool cache (`ResolvedFieldEntry`, `ResolvedMethodEntry`, `ResolvedIndyEntry`). `invokedynamic` call sites are linked by running their bootstrap method once.',
     purpose: 'Bind names to actual run-time entities, late enough to allow separate compilation.',
     internals: [
       'Class resolution (may load the class)',
@@ -565,10 +554,9 @@ System.out.println(a.getName() + " == " + b.getName() + " ? " + (a == b));`,
     provenance: 'spec',
     scope: 'shared',
     summary: 'Runs the class initialization method <clinit>: static initializers in textual order.',
-    beginner:
+    simple:
       "Initialization runs a class's static setup code: static blocks and static field initializers, top to bottom. It happens once per class, the first time the class is really used.",
-    technical:
-      'JVMS §5.5 and JLS §12.4. A class is initialized on: `new`, `getstatic`/`putstatic`/`invokestatic` of a member it declares (constant variables excepted), certain reflective calls, initialization of a subclass (the superclass first), and designation as the initial (main) class. The JVM runs the [[clinit|`<clinit>`]] method under a per-class initialization lock; other threads wait until it finishes. If `<clinit>` throws, the class enters an erroneous state: the first failure surfaces as `ExceptionInInitializerError`, later uses as `NoClassDefFoundError: Could not initialize class …`.',
+    deep: 'JVMS §5.5 and JLS §12.4. A class is initialized on: `new`, `getstatic`/`putstatic`/`invokestatic` of a member it declares (constant variables excepted), certain reflective calls, initialization of a subclass (the superclass first), and designation as the initial (main) class. The JVM runs the [[clinit|`<clinit>`]] method under a per-class initialization lock; other threads wait until it finishes. If `<clinit>` throws, the class enters an erroneous state: the first failure surfaces as `ExceptionInInitializerError`, later uses as `NoClassDefFoundError: Could not initialize class …`.',
     purpose: 'Run static setup exactly once, at a precisely defined moment, safely across threads.',
     internals: [
       'Trigger check (JLS §12.4.1)',
@@ -611,10 +599,9 @@ System.out.println(a.getName() + " == " + b.getName() + " ? " + (a == b));`,
     provenance: 'spec',
     scope: 'shared',
     summary: 'Classes may be unloaded only when their defining loader can be reclaimed by the GC.',
-    beginner:
+    simple:
       'Classes can be removed from memory, but only all together with the loader that loaded them, and only once nothing in the program can reach that loader any more.',
-    technical:
-      "JLS §12.7: an implementation may unload a class if and only if its defining class loader may be reclaimed by the garbage collector; classes defined by the bootstrap loader are never unloaded. HotSpot unloads during garbage collection (`ClassUnloading` is on by default, and with G1 also at the end of concurrent marking). The unit of unloading is the loader's `ClassLoaderData`: all its classes and their Metaspace go together.",
+    deep: "JLS §12.7: an implementation may unload a class if and only if its defining class loader may be reclaimed by the garbage collector; classes defined by the bootstrap loader are never unloaded. HotSpot unloads during garbage collection (`ClassUnloading` is on by default, and with G1 also at the end of concurrent marking). The unit of unloading is the loader's `ClassLoaderData`: all its classes and their Metaspace go together.",
     purpose:
       'Reclaim metadata in long-running JVMs that load code dynamically (application servers, scripting, generated classes).',
     internals: [

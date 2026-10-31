@@ -10,10 +10,9 @@ export const processComponents: ComponentDoc[] = [
     provenance: 'platform',
     scope: 'build',
     summary: 'Before the JVM runs anything, JDK tools translate Java source code into class files.',
-    beginner:
+    simple:
       'The JVM never reads the `.java` text you write. First the [[javac]] compiler, a tool in the [[jdk|JDK]], checks your code and translates it into `.class` files full of [[bytecode]]: compact, portable instructions. This usually happens inside your IDE or build tool, before the program starts.',
-    technical:
-      '`javac` implements the Java Language Specification: it parses, attributes types, resolves overloads, checks definite assignment and flow, desugars language features (inner classes, enhanced `for`, records, lambdas, string concatenation) and emits class files in the format defined by JVMS Chapter 4. The JVM consumes class files (or archived forms of them, such as a CDS/AOT cache), never source code.\n\nSource launch mode (`java Main.java`, JEP 330, and multi-file programs since JDK 22) still compiles: the launcher runs the compiler in memory before loading the result.',
+    deep: '`javac` implements the Java Language Specification: it parses, attributes types, resolves overloads, checks definite assignment and flow, desugars language features (inner classes, enhanced `for`, records, lambdas, string concatenation) and emits class files in the format defined by JVMS Chapter 4. The JVM consumes class files (or archived forms of them, such as a CDS/AOT cache), never source code.\n\nSource launch mode (`java Main.java`, JEP 330, and multi-file programs since JDK 22) still compiles: the launcher runs the compiler in memory before loading the result.',
     purpose:
       'Separates language processing (Java rules, type checking, generics) from execution, so one compiled class file runs on any conforming JVM, on any operating system and CPU.',
     internals: [
@@ -54,10 +53,9 @@ export const processComponents: ComponentDoc[] = [
     provenance: 'platform',
     scope: 'build',
     summary: 'Human-written Java code, governed by the Java Language Specification.',
-    beginner:
+    simple:
       'This is the text you write: classes, methods and statements. It is meant for people. Computers cannot run it directly, so it must first be compiled.',
-    technical:
-      'A compilation unit as defined by the JLS. Its meaning (types, overload resolution, initialization order) is fixed by the language specification and checked by the compiler; the JVM sees only the compiled result. Local variable names, generic type arguments and comments are mostly not needed at run time and survive only as optional debug attributes or signatures.',
+    deep: 'A compilation unit as defined by the JLS. Its meaning (types, overload resolution, initialization order) is fixed by the language specification and checked by the compiler; the JVM sees only the compiled result. Local variable names, generic type arguments and comments are mostly not needed at run time and survive only as optional debug attributes or signatures.',
     purpose:
       'Express the program in the Java language, which the compiler can check and translate.',
     internals: [
@@ -114,10 +112,9 @@ public class Main {
     provenance: 'platform',
     scope: 'build',
     summary: 'The JDK compiler: checks Java source against the JLS and emits class files.',
-    beginner:
+    simple:
       '`javac` reads your `.java` files, reports mistakes, and writes `.class` files. It is a program in the JDK, not part of the JVM.',
-    technical:
-      '`javac` lowers Java constructs to JVM constructs. Examples visible in `javap` output: `new Person("Alex")` becomes `new`, `dup`, `ldc`, `invokespecial`; string concatenation compiles to an `invokedynamic` call to `StringConcatFactory` (JDK 9+); lambdas compile to `invokedynamic` plus a synthetic method; generic types are erased to their bounds, with signatures kept in `Signature` attributes for reflection.',
+    deep: '`javac` lowers Java constructs to JVM constructs. Examples visible in `javap` output: `new Person("Alex")` becomes `new`, `dup`, `ldc`, `invokespecial`; string concatenation compiles to an `invokedynamic` call to `StringConcatFactory` (JDK 9+); lambdas compile to `invokedynamic` plus a synthetic method; generic types are erased to their bounds, with signatures kept in `Signature` attributes for reflection.',
     purpose: 'Translate a checked Java program into the portable instruction set of the JVM.',
     internals: [
       'Parser and syntax tree',
@@ -172,10 +169,9 @@ $ javap -c -p Main.class`,
     provenance: 'spec',
     scope: 'build',
     summary: 'The binary format the JVM loads: constant pool, fields, methods and bytecode.',
-    beginner:
+    simple:
       'A class file is the compiled form of one class. It contains the class name, its fields and methods, the [[bytecode]] instructions for each method, and a table of names and constants (the [[constant-pool]]) that the instructions refer to.',
-    technical:
-      "Defined by JVMS §4.1: `magic` (`0xCAFEBABE`), `minor_version`/`major_version` (69 for Java SE 25), the `constant_pool`, access flags, `this_class`, `super_class`, interfaces, fields, methods and attributes. Each method's `Code` attribute holds `max_stack`, `max_locals`, the bytecode, the exception table and a `StackMapTable` used by the verifier. Instructions never embed names or addresses: they hold indexes into the constant pool, which keeps **symbolic** references until run time.",
+    deep: "Defined by JVMS §4.1: `magic` (`0xCAFEBABE`), `minor_version`/`major_version` (69 for Java SE 25), the `constant_pool`, access flags, `this_class`, `super_class`, interfaces, fields, methods and attributes. Each method's `Code` attribute holds `max_stack`, `max_locals`, the bytecode, the exception table and a `StackMapTable` used by the verifier. Instructions never embed names or addresses: they hold indexes into the constant pool, which keeps **symbolic** references until run time.",
     purpose:
       'A platform-independent, verifiable contract between compilers and JVM implementations.',
     internals: [
@@ -221,10 +217,9 @@ Constant pool:
     scope: 'process',
     summary:
       'The operating-system process created by `java`: it hosts the launcher, the JVM, native libraries and every byte of JVM-managed memory.',
-    beginner:
+    simple:
       'When you type `java Main`, the operating system starts one program, called a process. Everything in this diagram except the build tools runs inside that one process and shares its memory space.',
-    technical:
-      "The process's virtual address space contains the JVM library (`libjvm`), the Java heap, Metaspace, the code cache, one native stack per thread, garbage-collector data structures, direct `ByteBuffer`s, memory used by native libraries, and the C heap (`malloc`). This is why the **Java heap is not the same thing as process memory**: `-Xmx` limits the Java heap only, and the resident set size of a JVM is usually larger.",
+    deep: "The process's virtual address space contains the JVM library (`libjvm`), the Java heap, Metaspace, the code cache, one native stack per thread, garbage-collector data structures, direct `ByteBuffer`s, memory used by native libraries, and the C heap (`malloc`). This is why the **Java heap is not the same thing as process memory**: `-Xmx` limits the Java heap only, and the resident set size of a JVM is usually larger.",
     purpose: 'Give the JVM an isolated address space, threads and OS resources (files, sockets).',
     internals: [
       'The `java` launcher, which creates the JVM in-process',
@@ -257,10 +252,9 @@ Constant pool:
     scope: 'process',
     summary:
       'The small native program behind the `java` command: it creates the JVM inside the process, loads the main class and calls `main`.',
-    beginner:
+    simple:
       'The `java` command is a small native program. It reads your options, starts the JVM inside the same process, asks it to load your main class, and then calls your `main` method.',
-    technical:
-      "The launcher (`libjli`, `java.c`) parses options, locates and loads `libjvm`, and creates the VM with the [[jni|JNI]] Invocation API (`JNI_CreateJavaVM`). On most platforms it runs the rest of start-up in a new native thread so that the main thread's stack size honours `-Xss`. It then loads the main class through the system class loader, checks for a suitable `main` method (JDK 25 also accepts instance `main` methods, JEP 512), invokes it, and finally calls `DestroyJavaVM`, which waits for all non-daemon threads to finish.",
+    deep: "The launcher (`libjli`, `java.c`) parses options, locates and loads `libjvm`, and creates the VM with the [[jni|JNI]] Invocation API (`JNI_CreateJavaVM`). On most platforms it runs the rest of start-up in a new native thread so that the main thread's stack size honours `-Xss`. It then loads the main class through the system class loader, checks for a suitable `main` method (JDK 25 also accepts instance `main` methods, JEP 512), invokes it, and finally calls `DestroyJavaVM`, which waits for all non-daemon threads to finish.",
     purpose: "Bridge between the operating system command line and the JVM's Invocation API.",
     internals: [
       'Option parsing (`-cp`, `-Xmx`, `--module-path`, `@argfiles`, `JDK_JAVA_OPTIONS`)',
@@ -309,10 +303,9 @@ Alex`,
     scope: 'process',
     summary:
       'An abstract machine defined by the JVM Specification; HotSpot is the implementation shown here.',
-    beginner:
+    simple:
       'The JVM is the engine that runs Java bytecode. It loads classes, manages memory, runs code (first by interpreting it, then by compiling hot parts to machine code), and cleans up memory that is no longer used.',
-    technical:
-      'The JVM Specification defines the class file format, the instruction set, loading, linking and initialization, and the run-time data areas — **abstractly**. It deliberately leaves memory layout, garbage collection algorithms and compilation strategy to implementations (JVMS §2.13). HotSpot, the OpenJDK implementation used by most JDK distributions, is a C++ library (`libjvm`) with a template interpreter, the C1 and C2 JIT compilers and several garbage collectors. Other JVMs (Eclipse OpenJ9, for example) satisfy the same specification with different internals.',
+    deep: 'The JVM Specification defines the class file format, the instruction set, loading, linking and initialization, and the run-time data areas — **abstractly**. It deliberately leaves memory layout, garbage collection algorithms and compilation strategy to implementations (JVMS §2.13). HotSpot, the OpenJDK implementation used by most JDK distributions, is a C++ library (`libjvm`) with a template interpreter, the C1 and C2 JIT compilers and several garbage collectors. Other JVMs (Eclipse OpenJ9, for example) satisfy the same specification with different internals.',
     purpose: 'Run any valid class file with the same observable behaviour on any platform.',
     internals: [
       '01 Class loader subsystem',
@@ -354,10 +347,9 @@ Alex`,
     scope: 'process',
     summary:
       "Shared libraries of machine code loaded into the process: the JDK's own (libjava, libnio, libnet…) and the application's.",
-    beginner:
+    simple:
       'Some work cannot be written in Java: talking to the operating system, using a graphics card, or calling an existing C library. That code lives in native libraries, files of machine code that the process loads and calls through [[jni|JNI]] (or the newer [[ffm-api|Foreign Function & Memory API]]).',
-    technical:
-      '`System.loadLibrary("nativemath")` maps the name to a platform file name (`libnativemath.so` on Linux) and searches `java.library.path`; `System.load` takes an absolute path. A library is associated with the class loader of the caller and can be unloaded only when that loader is unreachable. If the library exports `JNI_OnLoad`, it runs when the library is loaded. Native methods are then bound by symbol name (`Java_NativeMath_add`) or by `RegisterNatives` (JVMS §5.6). The JDK itself is mostly native-backed at the bottom: file and socket I/O go through `libnio`/`libnet`, and `libjvm` itself is a native library.',
+    deep: '`System.loadLibrary("nativemath")` maps the name to a platform file name (`libnativemath.so` on Linux) and searches `java.library.path`; `System.load` takes an absolute path. A library is associated with the class loader of the caller and can be unloaded only when that loader is unreachable. If the library exports `JNI_OnLoad`, it runs when the library is loaded. Native methods are then bound by symbol name (`Java_NativeMath_add`) or by `RegisterNatives` (JVMS §5.6). The JDK itself is mostly native-backed at the bottom: file and socket I/O go through `libnio`/`libnet`, and `libjvm` itself is a native library.',
     purpose:
       'Provide machine code the JVM can call: OS services, hardware access, existing C/C++ libraries.',
     internals: [

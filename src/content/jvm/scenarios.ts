@@ -203,10 +203,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'compile',
         title: 'Compile ahead of time',
-        beginner:
+        simple:
           'Before the program runs, `javac` turned `Main.java` and `Person.java` into `Main.class` and `Person.class`.',
-        technical:
-          '`javac` emits one class file per class: Java 25 class files carry major version 69. They contain bytecode and constant pools with **symbolic** references such as `#7 = Class Person`; nothing is linked yet.',
+        deep: '`javac` emits one class file per class: Java 25 class files carry major version 69. They contain bytecode and constant pools with **symbolic** references such as `#7 = Class Person`; nothing is linked yet.',
         active: ['source-file', 'javac', 'class-file'],
         flows: [
           { from: 'source-file', to: 'javac' },
@@ -217,20 +216,18 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'launch',
         title: 'The launcher creates the JVM',
-        beginner:
+        simple:
           'Typing `java -cp . Main` starts a small native program. It loads the JVM library into the same process and switches it on.',
-        technical:
-          'The launcher (`libjli`) parses the options, loads `libjvm`, and calls the JNI Invocation API `JNI_CreateJavaVM`. On most platforms it continues in a new native thread so that `-Xss` applies to the main Java thread.',
+        deep: 'The launcher (`libjli`) parses the options, loads `libjvm`, and calls the JNI Invocation API `JNI_CreateJavaVM`. On most platforms it continues in a new native thread so that `-Xss` applies to the main Java thread.',
         active: ['java-process', 'launcher', 'jvm'],
         flows: [{ from: 'launcher', to: 'jvm' }],
       },
       {
         id: 'vm-init',
         title: 'The JVM builds its machinery',
-        beginner:
+        simple:
           'The JVM reserves memory for objects and for compiled code, chooses a garbage collector, and prepares its interpreter.',
-        technical:
-          "HotSpot selects G1 (this is a server-class machine), reserves the Java heap and the 240 MB code cache, sets up Metaspace, and **generates** the template interpreter into the code cache's non-nmethod segment. The main thread gets a `JavaThread` with its stack and guard zones.",
+        deep: "HotSpot selects G1 (this is a server-class machine), reserves the Java heap and the 240 MB code cache, sets up Metaspace, and **generates** the template interpreter into the code cache's non-nmethod segment. The main thread gets a `JavaThread` with its stack and guard zones.",
         active: [
           'heap',
           'method-area',
@@ -244,10 +241,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'bootstrap',
         title: 'The bootstrap loader defines the core classes',
-        beginner:
+        simple:
           "The JVM's built-in loader brings in the classes everything depends on, such as `Object` and `String`.",
-        technical:
-          '`java.lang.Object`, `String` and about 420 other `java.base` classes are mapped from the default CDS archive ("source: shared objects file" in the log), then initialized in dependency order. Their metadata lands in Metaspace, their `Class` mirrors in the heap.',
+        deep: '`java.lang.Object`, `String` and about 420 other `java.base` classes are mapped from the default CDS archive ("source: shared objects file" in the log), then initialized in dependency order. Their metadata lands in Metaspace, their `Class` mirrors in the heap.',
         active: ['bootstrap-loader', 'loading', 'method-area', 'heap'],
         states: { 'bootstrap-loader': 'ok' },
         flows: [{ from: 'loading', to: 'method-area' }],
@@ -256,10 +252,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'load-main',
         title: 'The application loader is asked for Main',
-        beginner:
+        simple:
           'The launcher asks the application loader for `Main`. It first asks its parents; neither has it, so it reads `Main.class` from the class path itself.',
-        technical:
-          '`Main` is in the unnamed package, which belongs to no named module, so `BuiltinClassLoader.loadClassOrNull` delegates to the platform loader, which delegates to the boot loader. Both return nothing; the application loader then finds `Main.class` on `-cp .` and defines it.',
+        deep: '`Main` is in the unnamed package, which belongs to no named module, so `BuiltinClassLoader.loadClassOrNull` delegates to the platform loader, which delegates to the boot loader. Both return nothing; the application loader then finds `Main.class` on `-cp .` and defines it.',
         active: [
           'launcher',
           'application-loader',
@@ -279,10 +274,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'link-main',
         title: 'Main is verified and prepared',
-        beginner:
+        simple:
           "The JVM checks that `Main`'s bytecode is safe and sets up its static fields (it has none).",
-        technical:
-          'The type-checking verifier checks `main` against its `StackMapTable` (max_stack 3, max_locals 3). Preparation creates static fields with default values; `Main` declares none. Symbolic references such as `#7` stay unresolved until used.',
+        deep: 'The type-checking verifier checks `main` against its `StackMapTable` (max_stack 3, max_locals 3). Preparation creates static fields with default values; `Main` declares none. Symbolic references such as `#7` stay unresolved until used.',
         active: ['linking', 'verification', 'preparation'],
         flows: [
           { from: 'loading', to: 'linking' },
@@ -292,20 +286,18 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'init-main',
         title: 'Main is initialized',
-        beginner:
+        simple:
           'The main class is initialized before `main` is called. `Main` has no static setup code, so this is quick.',
-        technical:
-          'JVMS §5.5: the initial class is initialized before its `main` method is invoked. `Main` has no static initializer, so `javac` emitted no `<clinit>`; its superclass `Object` is already initialized.',
+        deep: 'JVMS §5.5: the initial class is initialized before its `main` method is invoked. `Main` has no static initializer, so `javac` emitted no `<clinit>`; its superclass `Object` is already initialized.',
         active: ['initialization'],
         states: { initialization: 'ok' },
       },
       {
         id: 'invoke-main',
         title: 'main() gets a frame and starts',
-        beginner:
+        simple:
           "The JVM calls `main`. A new frame is placed on the main thread's stack, and the interpreter starts at the first instruction.",
-        technical:
-          "The launcher invokes `main` through JNI (`CallStaticVoidMethod`). The main thread's JVM stack gets a frame for `main(String[])`: `args` in local slot 0, an empty operand stack, and pc 0 pointing at `new #7`. Execution starts in the interpreter.",
+        deep: "The launcher invokes `main` through JNI (`CallStaticVoidMethod`). The main thread's JVM stack gets a frame for `main(String[])`: `args` in local slot 0, an empty operand stack, and pc 0 pointing at `new #7`. Execution starts in the interpreter.",
         active: ['interpreter', 'jvm-stack', 'stack-frame', 'local-variables', 'pc-register'],
         frame: { method: 'main(String[])', pc: 0, locals: ['args', '—', '—'], stack: [] },
         flows: [
@@ -335,10 +327,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'resolve',
         title: 'new #7 · resolve and load Person',
-        beginner:
+        simple:
           'The first instruction says "make a Person". The JVM has never used `Person` before, so it finds, checks and prepares the class first.',
-        technical:
-          '`new #7` names constant pool entry #7 (`Class Person`), still symbolic. Resolving it (JVMS §5.4.3.1) makes the application loader load `Person.class` after delegating to its parents; `Person` is linked and, because `new` is an initialization trigger (JVMS §5.5), initialized. It has no static initializer.',
+        deep: '`new #7` names constant pool entry #7 (`Class Person`), still symbolic. Resolving it (JVMS §5.4.3.1) makes the application loader load `Person.class` after delegating to its parents; `Person` is linked and, because `new` is an initialization trigger (JVMS §5.5), initialized. It has no static initializer.',
         active: [
           'interpreter',
           'pc-register',
@@ -360,10 +351,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'allocate',
         title: 'new #7 · allocate the object',
-        beginner:
+        simple:
           'Space for one Person is reserved in the heap. Its `name` starts out empty (`null`). The JVM keeps a reference to it on its scratch stack.',
-        technical:
-          "HotSpot bumps the pointer of the thread's TLAB in an eden region and writes the header: an 8-byte mark word and a 4-byte compressed class pointer. Fields are zeroed (`name = null`); with the 4-byte compressed reference field the object is 16 bytes. A reference to the **uninitialized** object is pushed: operand stack `[ref]`.",
+        deep: "HotSpot bumps the pointer of the thread's TLAB in an eden region and writes the header: an 8-byte mark word and a 4-byte compressed class pointer. Fields are zeroed (`name = null`); with the 4-byte compressed reference field the object is 16 bytes. A reference to the **uninitialized** object is pushed: operand stack `[ref]`.",
         active: ['heap', 'eden', 'operand-stack', 'interpreter'],
         frame: { method: 'main(String[])', pc: 0, locals: ['args', '—', '—'], stack: ['ref'] },
         flows: [{ from: 'execution-engine', to: 'heap' }],
@@ -373,10 +363,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'dup',
         title: 'dup · duplicate the reference',
-        beginner:
+        simple:
           'The reference is copied on the scratch stack: one copy for the constructor, one to keep.',
-        technical:
-          'Operand stack `[ref]` → `[ref, ref]`. `invokespecial` will consume one; the other is still there afterwards for `astore_1`.',
+        deep: 'Operand stack `[ref]` → `[ref, ref]`. `invokespecial` will consume one; the other is still there afterwards for `astore_1`.',
         active: ['operand-stack'],
         frame: {
           method: 'main(String[])',
@@ -389,9 +378,8 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'ldc',
         title: 'ldc #9 · push "Alex"',
-        beginner: 'The text "Alex" is pushed on the scratch stack as the constructor\'s argument.',
-        technical:
-          '#9 is a `String` constant. On first execution HotSpot resolves it to an interned `java.lang.String` in the heap and caches it with the class. Operand stack `[ref, ref, "Alex"]`: depth 3, exactly `max_stack`.',
+        simple: 'The text "Alex" is pushed on the scratch stack as the constructor\'s argument.',
+        deep: '#9 is a `String` constant. On first execution HotSpot resolves it to an interned `java.lang.String` in the heap and caches it with the class. Operand stack `[ref, ref, "Alex"]`: depth 3, exactly `max_stack`.',
         active: ['runtime-constant-pool', 'operand-stack', 'heap'],
         frame: {
           method: 'main(String[])',
@@ -405,10 +393,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'invokespecial',
         title: 'invokespecial #11 · call the constructor',
-        beginner:
+        simple:
           'The constructor is called. It gets its own frame on top of the stack, with `this` and `name` as its local variables.',
-        technical:
-          'Pops `"Alex"` and the receiver, resolves #11 to `Person.<init>(String)`, and pushes a new frame with locals `[0: this, 1: "Alex"]` (max_stack 2, max_locals 2). The frame records where to return: `main` at pc 9.',
+        deep: 'Pops `"Alex"` and the receiver, resolves #11 to `Person.<init>(String)`, and pushes a new frame with locals `[0: this, 1: "Alex"]` (max_stack 2, max_locals 2). The frame records where to return: `main` at pc 9.',
         active: ['jvm-stack', 'stack-frame', 'local-variables', 'frame-data', 'interpreter'],
         frame: { method: 'Person.<init>(String)', pc: 0, locals: ['this', '"Alex"'], stack: [] },
         flows: [{ from: 'interpreter', to: 'jvm-stack' }],
@@ -420,10 +407,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'constructor',
         title: 'Person.<init> runs',
-        beginner:
+        simple:
           'The constructor first runs `Object`\'s constructor, then stores "Alex" into the new object\'s `name` field, and returns.',
-        technical:
-          '`aload_0; invokespecial Object.<init>` (one more frame, pushed and popped); `aload_0; aload_1; putfield #7` writes the reference to "Alex" into the object\'s `name` field in the heap; `return` pops the constructor frame.',
+        deep: '`aload_0; invokespecial Object.<init>` (one more frame, pushed and popped); `aload_0; aload_1; putfield #7` writes the reference to "Alex" into the object\'s `name` field in the heap; `return` pops the constructor frame.',
         active: ['interpreter', 'heap', 'stack-frame'],
         frame: { method: 'Person.<init>(String)', pc: 6, locals: ['this', '"Alex"'], stack: [] },
         flows: [{ from: 'execution-engine', to: 'heap' }],
@@ -432,9 +418,8 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'astore',
         title: 'astore_1 · p1 refers to the object',
-        beginner: 'Back in `main`, the reference is stored in variable `p1`.',
-        technical:
-          'Execution resumes in `main` at pc 9. `astore_1` pops the remaining reference into local slot 1 (`p1`). The operand stack is empty again.',
+        simple: 'Back in `main`, the reference is stored in variable `p1`.',
+        deep: 'Execution resumes in `main` at pc 9. `astore_1` pops the remaining reference into local slot 1 (`p1`). The operand stack is empty again.',
         active: ['local-variables', 'operand-stack'],
         frame: { method: 'main(String[])', pc: 9, locals: ['args', 'ref', '—'], stack: [] },
         states: { 'local-variables': 'ok' },
@@ -446,9 +431,8 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'copy',
         title: 'p2 = p1 copies the reference',
-        beginner: 'Now `p2` refers to the same Person as `p1`. There is still only one object.',
-        technical:
-          '`aload_1; astore_2` copies the reference value from slot 1 to slot 2. One object, two references; no object is copied.',
+        simple: 'Now `p2` refers to the same Person as `p1`. There is still only one object.',
+        deep: '`aload_1; astore_2` copies the reference value from slot 1 to slot 2. One object, two references; no object is copied.',
         active: ['local-variables', 'heap'],
         frame: { method: 'main(String[])', pc: 11, locals: ['args', 'ref', 'ref'], stack: [] },
         focus: [
@@ -459,10 +443,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'print',
         title: 'println(p2.getName()) reaches the OS',
-        beginner:
+        simple:
           'Printing the name ends with the operating system writing the bytes to your terminal.',
-        technical:
-          "`getstatic #14` resolves `System.out`; `invokevirtual #20` selects `getName` through Person's method table and pushes a frame; `invokevirtual #24` calls `PrintStream.println`, which eventually reaches the native method `FileOutputStream.writeBytes`, the JDK's native library, and a `write` system call.",
+        deep: "`getstatic #14` resolves `System.out`; `invokevirtual #20` selects `getName` through Person's method table and pushes a frame; `invokevirtual #24` calls `PrintStream.println`, which eventually reaches the native method `FileOutputStream.writeBytes`, the JDK's native library, and a `write` system call.",
         active: ['interpreter', 'runtime-constant-pool', 'jni', 'native-libraries', 'system-calls'],
         frame: { method: 'main(String[])', pc: 19, locals: ['args', 'ref', 'ref'], stack: [] },
         flows: [
@@ -478,10 +461,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'unreachable',
         title: 'p1 = null; p2 = null',
-        beginner:
+        simple:
           'Both variables are cleared. Nothing refers to the Person any more, so it is garbage — but nothing happens to it yet.',
-        technical:
-          '`aconst_null; astore_1; aconst_null; astore_2`. No frame slot, static field or other GC root reaches the Person: it is **unreachable**, therefore **eligible** for collection. It is reclaimed at some later young collection — or never, if the program exits first.',
+        deep: '`aconst_null; astore_1; aconst_null; astore_2`. No frame slot, static field or other GC root reaches the Person: it is **unreachable**, therefore **eligible** for collection. It is reclaimed at some later young collection — or never, if the program exits first.',
         active: ['local-variables', 'gc-roots', 'heap'],
         frame: { method: 'main(String[])', pc: 25, locals: ['args', 'null', 'null'], stack: [] },
         states: { 'gc-roots': 'warn' },
@@ -511,10 +493,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'interpret',
         title: 'square() starts in the interpreter',
-        beginner:
+        simple:
           'At first, every call to `square` is interpreted, and the JVM counts how often it runs.',
-        technical:
-          "Each call pushes a frame and executes `iload_0; iload_0; imul; ireturn` (4 bytes). The interpreter increments `square`'s invocation counter and `main`'s loop back-edge counter.",
+        deep: "Each call pushes a frame and executes `iload_0; iload_0; imul; ireturn` (4 bytes). The interpreter increments `square`'s invocation counter and `main`'s loop back-edge counter.",
         active: ['interpreter', 'profiler', 'jvm-stack'],
         flows: [{ from: 'interpreter', to: 'profiler' }],
         focus: [{ listing: 'hot-java', line: 3 }],
@@ -522,10 +503,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'tier3',
         title: 'Tier 3: C1 compiles, with profiling',
-        beginner:
+        simple:
           'After a couple of hundred calls the method counts as "warm", and the quick compiler translates it in the background.',
-        technical:
-          'Around `Tier3InvocationThreshold` (200, scaled by compiler load) the policy queues `square` at tier 3. A C1 compiler thread compiles it while the program keeps interpreting: `11  3  Hot::square (4 bytes)`.',
+        deep: 'Around `Tier3InvocationThreshold` (200, scaled by compiler load) the policy queues `square` at tier 3. A C1 compiler thread compiles it while the program keeps interpreting: `11  3  Hot::square (4 bytes)`.',
         active: ['profiler', 'jit-compiler', 'compilation', 'c1'],
         flows: [{ from: 'profiler', to: 'jit-compiler' }],
         focus: [{ listing: 'print-compilation', line: 1 }],
@@ -533,10 +513,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'install',
         title: 'Installed in the code cache',
-        beginner:
+        simple:
           'The machine code is stored, and from now on calls to `square` run it instead of the interpreter.',
-        technical:
-          "The tier-3 nmethod is installed in the profiled-nmethods code heap. It still counts calls and fills the method's MethodData profile for C2.",
+        deep: "The tier-3 nmethod is installed in the profiled-nmethods code heap. It still counts calls and fills the method's MethodData profile for C2.",
         active: ['code-cache', 'c1'],
         states: { 'code-cache': 'ok' },
         flows: [{ from: 'jit-compiler', to: 'code-cache' }],
@@ -544,10 +523,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'tier4',
         title: 'Tier 4: C2 optimizes',
-        beginner:
+        simple:
           'The method is now hot, so the thorough compiler produces the fastest version, using what the profile learned.',
-        technical:
-          "With a mature profile (`Tier4InvocationThreshold` 5000) C2 compiles `square` with full optimization: `12  4  Hot::square (4 bytes)`. In `main`'s compiled loop, a 4-byte method like this is inlined, so no call remains.",
+        deep: "With a mature profile (`Tier4InvocationThreshold` 5000) C2 compiles `square` with full optimization: `12  4  Hot::square (4 bytes)`. In `main`'s compiled loop, a 4-byte method like this is inlined, so no call remains.",
         active: ['c2', 'optimization', 'profiler'],
         flows: [{ from: 'profiler', to: 'jit-compiler' }],
         focus: [{ listing: 'print-compilation', line: 2 }],
@@ -555,19 +533,17 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'retire',
         title: 'The tier-3 version is retired',
-        beginner: 'The older, slower version is no longer needed and is switched off.',
-        technical:
-          'Once the C2 nmethod (non-profiled code heap) is installed, the tier-3 one is `made not entrant: not used`: no new calls enter it, and it is unloaded later.',
+        simple: 'The older, slower version is no longer needed and is switched off.',
+        deep: 'Once the C2 nmethod (non-profiled code heap) is installed, the tier-3 one is `made not entrant: not used`: no new calls enter it, and it is unloaded later.',
         active: ['code-cache'],
         focus: [{ listing: 'print-compilation', line: 3 }],
       },
       {
         id: 'osr',
         title: 'OSR: the running loop jumps into compiled code',
-        beginner:
+        simple:
           '`main` is called only once, but its loop runs 200,000 times. The JVM compiles the loop and moves the running method into the compiled version mid-loop.',
-        technical:
-          'The back-edge counter triggers an on-stack-replacement compile at bytecode index 4, the loop header (`13 %  3  Hot::main @ 4`, then `15 %  4`). The live interpreter frame is migrated into the compiled code.',
+        deep: 'The back-edge counter triggers an on-stack-replacement compile at bytecode index 4, the loop header (`13 %  3  Hot::main @ 4`, then `15 %  4`). The live interpreter frame is migrated into the compiled code.',
         active: ['compilation', 'jvm-stack', 'interpreter', 'c2'],
         focus: [
           { listing: 'hot-java', line: 8 },
@@ -577,10 +553,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'deopt',
         title: 'If a bet fails: deoptimization',
-        beginner:
+        simple:
           'If an assumption behind the fast code turned out wrong, the JVM would safely switch back to the interpreter and maybe compile again later.',
-        technical:
-          'Not triggered in this run. Had C2 speculated — say on a receiver type or an untaken branch — and been wrong, an uncommon trap would rebuild interpreter frames from debug info and execution would continue in the interpreter.',
+        deep: 'Not triggered in this run. Had C2 speculated — say on a receiver type or an untaken branch — and been wrong, an uncommon trap would rebuild interpreter frames from debug info and execution would continue in the interpreter.',
         active: ['deoptimization', 'interpreter', 'code-cache'],
         states: { deoptimization: 'warn' },
         flows: [
@@ -592,10 +567,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'cpu',
         title: 'Native instructions on the CPU',
-        beginner:
+        simple:
           'In the end, the work of `square` is a handful of machine instructions executed directly by the processor.',
-        technical:
-          'The C2 code for the loop is native x86-64 code: an integer multiply and an add per iteration, possibly unrolled. No bytecode is interpreted any more.',
+        deep: 'The C2 code for the loop is native x86-64 code: an integer multiply and an add per iteration, possibly unrolled. No bytecode is interpreted any more.',
         active: ['code-cache', 'cpu'],
         flows: [{ from: 'code-cache', to: 'cpu' }],
       },
@@ -619,10 +593,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'allocate',
         title: 'Threads allocate in eden',
-        beginner:
+        simple:
           '`Alloc` creates 2,000 arrays and keeps only every tenth. All of them start life in eden.',
-        technical:
-          "Each thread allocates in eden regions, usually by bumping a pointer in its TLAB; a 64 KB array may take a slower path but still goes to eden (it is below G1's humongous threshold of half a region).",
+        deep: "Each thread allocates in eden regions, usually by bumping a pointer in its TLAB; a 64 KB array may take a slower path but still goes to eden (it is below G1's humongous threshold of half a region).",
         active: ['java-thread', 'eden', 'heap'],
         flows: [{ from: 'execution-engine', to: 'heap' }],
         focus: [{ listing: 'alloc-java', line: 8 }],
@@ -630,28 +603,25 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'trigger',
         title: 'Eden is full',
-        beginner: 'Eventually there is no room left in eden, so a cleanup is needed.',
-        technical:
-          'An allocation finds no free eden region. G1 schedules a young collection: an evacuation pause.',
+        simple: 'Eventually there is no room left in eden, so a cleanup is needed.',
+        deep: 'An allocation finds no free eden region. G1 schedules a young collection: an evacuation pause.',
         active: ['eden', 'garbage-collector', 'g1'],
         states: { eden: 'warn' },
       },
       {
         id: 'safepoint',
         title: 'Stop the world at a safepoint',
-        beginner:
+        simple:
           'All Java threads pause at a safe point so the collector can work without the objects changing under it.',
-        technical:
-          'Java threads are brought to a safepoint: interpreted and compiled code poll at method returns and loop back-edges; threads running native code count as already safe. The pause starts.',
+        deep: 'Java threads are brought to a safepoint: interpreted and compiled code poll at method returns and loop back-edges; threads running native code count as already safe. The pause starts.',
         active: ['interpreter', 'code-cache', 'java-thread', 'garbage-collector'],
       },
       {
         id: 'roots',
         title: 'Scan the roots',
-        beginner:
+        simple:
           'The collector starts from the roots: variables in running methods, static fields, and JNI references.',
-        technical:
-          'G1 scans thread stacks (oop maps say which compiled-frame slots hold references), class and loader roots, JNI handles, and the remembered sets of young regions (references from old regions into young objects).',
+        deep: 'G1 scans thread stacks (oop maps say which compiled-frame slots hold references), class and loader roots, JNI handles, and the remembered sets of young regions (references from old regions into young objects).',
         active: ['gc-roots', 'jvm-stack', 'method-area', 'jni'],
         flows: [
           { from: 'jvm-stack', to: 'gc-roots' },
@@ -661,29 +631,26 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'evacuate',
         title: 'Copy the live objects out',
-        beginner:
+        simple:
           'Objects that are still reachable are copied out of eden. The ones nobody refers to are simply left behind.',
-        technical:
-          'Live objects are copied from eden into survivor regions, or promoted to old regions when old enough or when survivor space is full; references are updated to the new copies. Here, the arrays held by `keep` survive.',
+        deep: 'Live objects are copied from eden into survivor regions, or promoted to old regions when old enough or when survivor space is full; references are updated to the new copies. Here, the arrays held by `keep` survive.',
         active: ['eden', 'survivor', 'old-generation', 'compaction', 'marking'],
         flows: [{ from: 'garbage-collector', to: 'heap' }],
       },
       {
         id: 'free',
         title: 'Free whole eden regions',
-        beginner:
+        simple:
           'Eden is now empty and ready for new objects. The garbage was never even looked at.',
-        technical:
-          'Every evacuated eden region is returned to the free list. The pause cost depends on live data, not on garbage.',
+        deep: 'Every evacuated eden region is returned to the free list. The pause cost depends on live data, not on garbage.',
         active: ['eden', 'heap'],
         states: { eden: 'ok' },
       },
       {
         id: 'resume',
         title: 'Resume, and read the log',
-        beginner: 'The program continues. The GC log records what happened and how long it took.',
-        technical:
-          '`GC(0) Pause Young (Normal) (G1 Evacuation Pause) 29M->3M(64M) 3.593ms`: heap use fell from 29 MB to 3 MB, in a 64 MB heap, in 3.6 ms.',
+        simple: 'The program continues. The GC log records what happened and how long it took.',
+        deep: '`GC(0) Pause Young (Normal) (G1 Evacuation Pause) 29M->3M(64M) 3.593ms`: heap use fell from 29 MB to 3 MB, in a 64 MB heap, in 3.6 ms.',
         active: ['garbage-collector', 'java-thread'],
         states: { 'garbage-collector': 'ok' },
         focus: [{ listing: 'gc-log', line: 2 }],
@@ -708,10 +675,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'load-library',
         title: 'Class initialization loads the library',
-        beginner:
+        simple:
           'When `NativeMath` is first used, its static block loads the native library file from disk.',
-        technical:
-          '`System.loadLibrary("nativemath")` runs in `NativeMath.<clinit>`. The JDK maps the name to `libnativemath.so`, searches `java.library.path`, and the OS loads it (`dlopen` on Linux). Since JDK 24 this prints a restricted-method warning unless native access is enabled (JEP 472).',
+        deep: '`System.loadLibrary("nativemath")` runs in `NativeMath.<clinit>`. The JDK maps the name to `libnativemath.so`, searches `java.library.path`, and the OS loads it (`dlopen` on Linux). Since JDK 24 this prints a restricted-method warning unless native access is enabled (JEP 472).',
         active: ['initialization', 'native-libraries', 'system-calls'],
         flows: [{ from: 'native-libraries', to: 'system-calls' }],
         focus: [{ listing: 'native-java', line: 3 }],
@@ -719,9 +685,8 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'bind',
         title: 'Bind the native method',
-        beginner: 'The JVM finds the C function that implements `add` by its special name.',
-        technical:
-          'On first invocation the JVM links `NativeMath.add` to the symbol `Java_NativeMath_add` in the loaded library (JVMS §5.6). `RegisterNatives` (usually called from `JNI_OnLoad`) is the alternative.',
+        simple: 'The JVM finds the C function that implements `add` by its special name.',
+        deep: 'On first invocation the JVM links `NativeMath.add` to the symbol `Java_NativeMath_add` in the loaded library (JVMS §5.6). `RegisterNatives` (usually called from `JNI_OnLoad`) is the alternative.',
         active: ['jni', 'native-libraries'],
         flows: [{ from: 'jni', to: 'native-libraries' }],
         focus: [{ listing: 'native-c', line: 4 }],
@@ -729,10 +694,9 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'transition',
         title: 'Java → native transition',
-        beginner:
+        simple:
           'The call crosses from Java into C. The JVM marks the thread as "in native", so garbage collection can carry on meanwhile.',
-        technical:
-          'A native wrapper passes `JNIEnv*`, the `jclass` and both `jint`s using the platform C calling convention, switches the thread state to "in native", and calls the function on the same thread stack.',
+        deep: 'A native wrapper passes `JNIEnv*`, the `jclass` and both `jint`s using the platform C calling convention, switches the thread state to "in native", and calls the function on the same thread stack.',
         active: ['jni', 'native-method-stack', 'interpreter'],
         flows: [
           { from: 'execution-engine', to: 'jni' },
@@ -743,18 +707,16 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'run-native',
         title: 'The C function runs',
-        beginner: 'The C code adds the numbers. It is ordinary machine code.',
-        technical:
-          '`return a + b;` Native code that needed Java objects would use `JNIEnv` functions and local references.',
+        simple: 'The C code adds the numbers. It is ordinary machine code.',
+        deep: '`return a + b;` Native code that needed Java objects would use `JNIEnv` functions and local references.',
         active: ['native-libraries', 'native-method-stack', 'cpu'],
         focus: [{ listing: 'native-c', line: 5 }],
       },
       {
         id: 'return',
         title: 'Back to Java',
-        beginner: 'The result comes back to Java, and the program prints 5.',
-        technical:
-          'The wrapper switches the thread back to "in Java", checks for a pending exception or safepoint, releases local references, and pushes the `jint` result on the caller\'s operand stack.',
+        simple: 'The result comes back to Java, and the program prints 5.',
+        deep: 'The wrapper switches the thread back to "in Java", checks for a pending exception or safepoint, releases local references, and pushes the `jint` result on the caller\'s operand stack.',
         active: ['jni', 'interpreter', 'operand-stack'],
         states: { jni: 'ok' },
       },

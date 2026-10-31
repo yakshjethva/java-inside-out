@@ -29,7 +29,7 @@ export function Badge({
     <span
       title={title}
       className={cn(
-        'inline-flex items-center gap-1 rounded-[4px] border px-1.5 py-[1px] font-mono text-[10.5px] leading-[1.5] tracking-wide uppercase',
+        'inline-flex items-center gap-1 rounded-[4px] border px-1.5 py-[1px] text-[12px] leading-[1.5] font-medium',
         dashed && 'border-dashed',
         tones[tone],
         className,

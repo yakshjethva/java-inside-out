@@ -1,21 +1,25 @@
 import {
   Boxes,
+  Compass,
   Crosshair,
-  Info,
-  Layers,
-  ListTree,
+  Map as MapIcon,
   Microscope,
+  Minimize2,
   Play,
   Scan,
   Search,
+  SlidersHorizontal,
 } from 'lucide-react';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { AnatomyCanvas, type CanvasHandle } from '@/components/anatomy/AnatomyCanvas';
+import { ComponentSearch } from '@/components/anatomy/ComponentSearch';
 import { ComponentTree, type TreeItem } from '@/components/anatomy/ComponentTree';
 import { Legend } from '@/components/anatomy/Legend';
 import { DiagramDefs } from '@/components/diagrams/DiagramDefs';
 import { ComponentInspector } from '@/components/inspector/ComponentInspector';
 import { Popover } from '@/components/learning/Popover';
+import { IconButton } from '@/components/ui/Button';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   ancestry,
@@ -25,9 +29,15 @@ import {
   ROOT_COMPONENTS,
   type ComponentId,
 } from '@/content/jvm';
+import { JVM_REGIONS, REGION_IDS } from '@/content/jvm/regions';
 import { relationshipsOf } from '@/content/jvm/relationships';
 import { SCENARIOS } from '@/content/jvm/scenarios';
-import { progressActions, usePreferences, useProgress } from '@/hooks/useLearningState';
+import {
+  preferenceActions,
+  progressActions,
+  usePreferences,
+  useProgress,
+} from '@/hooks/useLearningState';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { inflate, unionRect, type Rect } from '@/lib/geometry';
@@ -37,39 +47,54 @@ import { AnatomyPlate, type ExecutionOverlay } from './AnatomyPlate';
 import { ExecutionPanel } from './ExecutionPanel';
 import { InternalView } from './internals/InternalView';
 import { chooseCameraFocus, type CameraFocus } from './camera';
+import { ExplorerTour, TOUR_ID } from './ExplorerTour';
 import { buildScene, PART_NUMBER } from './scene';
 import { useAnatomyState, type ExplorerMode } from './useAnatomyState';
 
+// The lesson's interactive models load only when a learner opens one in the inspector.
+const Exhibit = lazy(() =>
+  import('@/modules/lesson/exhibits').then((m) => ({ default: m.Exhibit })),
+);
+
+/** On narrow screens only the selected view shows its name; the others keep theirs for screen readers. */
 const modeLabel = (icon: React.ReactNode, text: string) => (
   <>
     {icon}
-    <span className="hidden min-[460px]:inline">{text}</span>
-    <span className="sr-only min-[460px]:hidden">{text}</span>
+    <span className="hidden group-aria-checked:inline min-[460px]:inline">{text}</span>
+    <span className="sr-only group-aria-checked:hidden min-[460px]:hidden">{text}</span>
   </>
 );
 
+/** Friendly names first; the technical names stay in the descriptions. */
 const MODE_SEGMENTS: { value: ExplorerMode; label: React.ReactNode; description: string }[] = [
   {
     value: 'anatomy',
-    label: modeLabel(<Boxes size={14} aria-hidden />, 'Anatomy'),
-    description: 'The complete architecture',
+    label: modeLabel(<Boxes size={14} aria-hidden />, 'Overview'),
+    description: 'Anatomy view: how the parts fit together',
   },
   {
     value: 'exploded',
-    label: modeLabel(<Scan size={14} aria-hidden />, 'Exploded'),
-    description: 'Components separated and numbered',
+    label: modeLabel(<Scan size={14} aria-hidden />, 'Show the parts'),
+    description: 'Exploded view: every part pulled apart and numbered',
   },
   {
     value: 'internal',
-    label: modeLabel(<Microscope size={14} aria-hidden />, 'Internal'),
-    description: 'Dissection of the selected component',
+    label: modeLabel(<Microscope size={14} aria-hidden />, 'Look inside'),
+    description: 'Internal view: a dissection of the selected part',
   },
   {
     value: 'execution',
-    label: modeLabel(<Play size={14} aria-hidden />, 'Execution'),
-    description: 'Watch operations move through the JVM',
+    label: modeLabel(<Play size={14} aria-hidden />, 'Watch it run'),
+    description: 'Execution view: follow real code through the JVM, step by step',
   },
 ];
+
+/** Plain-language labels for the collapsed regions of the overview map. */
+const OVERVIEW_LABELS: Partial<Record<ComponentId, { title: string; blurb: string }>> = {
+  ...Object.fromEntries(JVM_REGIONS.map((r) => [r.id, { title: r.title, blurb: r.blurb }])),
+  'build-time': { title: 'Before it runs', blurb: 'javac compiles source code into class files.' },
+};
+const OVERVIEW_COLLAPSED: ComponentId[] = [...REGION_IDS, 'build-time'];
 
 function buildTree(id: ComponentId): TreeItem {
   const doc = COMPONENTS[id];
@@ -95,6 +120,7 @@ export function AnatomyExplorer() {
   const progress = useProgress();
   const reducedMotion = useReducedMotion();
   const wide = useMediaQuery('(min-width: 1280px)', true);
+  const wideEnoughForOverlay = useMediaQuery('(min-width: 640px)', true);
   const canvasRef = useRef<CanvasHandle>(null);
   const canvasAreaRef = useRef<HTMLDivElement>(null);
   const inspectorRef = useRef<HTMLDivElement>(null);
@@ -116,6 +142,30 @@ export function AnatomyExplorer() {
   const [layersOpen, setLayersOpen] = useState(false);
   const [follow, setFollow] = useState(true);
   const [focus, setFocus] = useState<CameraFocus | null>(null);
+  // First visit without a deep link: offer the guided tour once.
+  const [tourStep, setTourStep] = useState<number | null>(() =>
+    !(TOUR_ID in preferences.dismissed) && !selectedId && mode === 'anatomy' ? 0 : null,
+  );
+  const closeTour = () => {
+    setTourStep(null);
+    preferenceActions.dismiss(TOUR_ID);
+  };
+
+  // The overview shows the six main parts; the region holding the selection is opened.
+  const view = state.view ?? preferences.mapView;
+  const overview = mode === 'anatomy' && view === 'overview';
+  const openRegion = selectedId
+    ? (OVERVIEW_COLLAPSED.find((id) => ancestry(selectedId).some((doc) => doc.id === id)) ?? null)
+    : null;
+  const effectiveCollapsed = useMemo(
+    () => (overview ? new Set(OVERVIEW_COLLAPSED.filter((id) => id !== openRegion)) : collapsed),
+    [overview, openRegion, collapsed],
+  );
+  const setView = (next: 'overview' | 'full') => {
+    state.setView(next);
+    preferenceActions.setMapView(next);
+    if (next === 'overview') window.setTimeout(() => canvasRef.current?.fit(true), 0);
+  };
 
   const hiddenProvenance = useMemo(() => {
     const hidden = new Set<Provenance>();
@@ -126,8 +176,8 @@ export function AnatomyExplorer() {
 
   const diagramMode = mode === 'exploded' ? 'exploded' : 'anatomy';
   const scene = useMemo(
-    () => buildScene({ mode: diagramMode, collapsed, hiddenProvenance }),
-    [diagramMode, collapsed, hiddenProvenance],
+    () => buildScene({ mode: diagramMode, collapsed: effectiveCollapsed, hiddenProvenance }),
+    [diagramMode, effectiveCollapsed, hiddenProvenance],
   );
 
   const currentStep = scenario.steps[step]!;
@@ -319,8 +369,14 @@ export function AnatomyExplorer() {
           onToggleUnderstood={() => progressActions.toggleUnderstood(selectedId)}
           onDissect={mode === 'internal' ? undefined : () => state.setMode('internal')}
           onClose={() => select(null)}
+          walkthrough={walkthroughFor(selectedId, state.watch)}
+          renderDemo={(demo) => (
+            <Suspense fallback={<p className="text-[13.5px] text-fg-subtle">Loading the model…</p>}>
+              <Exhibit id={demo} />
+            </Suspense>
+          )}
         />
-        {childrenOf(selectedId).length > 0 && mode !== 'internal' && (
+        {childrenOf(selectedId).length > 0 && mode !== 'internal' && !overview && (
           <div className="border-t border-ink-700 px-5 py-3">
             <button
               type="button"
@@ -335,7 +391,13 @@ export function AnatomyExplorer() {
         )}
       </>
     ) : (
-      <WelcomePanel mode={mode} onSelect={navigate} />
+      <WelcomePanel
+        mode={mode}
+        overview={overview}
+        onSelect={navigate}
+        onFullMap={() => setView('full')}
+        onTour={() => setTourStep(0)}
+      />
     );
 
   return (
@@ -343,17 +405,17 @@ export function AnatomyExplorer() {
       aria-label="JVM anatomy explorer"
       className="flex flex-col xl:h-[calc(100dvh-104px)] xl:min-h-[600px]"
     >
-      {/* Toolbar */}
+      {/* Toolbar: the mode, finding a component, the tour; everything else is in Advanced options. */}
       <div className="flex flex-wrap items-center gap-2 border-b border-ink-700 bg-ink-950 px-3 py-2 sm:px-4">
         <SegmentedControl
-          label="Diagram mode"
+          label="View"
           value={mode}
           onChange={state.setMode}
           segments={MODE_SEGMENTS}
         />
         {mode === 'execution' && (
           <label className="flex items-center gap-2 text-[12.5px] text-fg-subtle">
-            <span className="sr-only sm:not-sr-only">Scenario</span>
+            <span className="sr-only sm:not-sr-only">Walkthrough</span>
             <select
               value={scenario.id}
               onChange={(event) => state.setScenario(event.target.value)}
@@ -367,104 +429,133 @@ export function AnatomyExplorer() {
             </select>
           </label>
         )}
-        <div className="ml-auto flex flex-wrap items-center gap-1.5">
+        <div className="flex w-full flex-wrap items-center gap-1.5 sm:ml-auto sm:w-auto">
+          <ComponentSearch onSelect={(id) => navigate(id)} />
           <ToolbarButton
-            pressed={treeOpen}
-            onClick={() => setTreeOpen((v) => !v)}
-            icon={<ListTree size={15} aria-hidden />}
+            pressed={tourStep !== null}
+            onClick={() => (tourStep === null ? setTourStep(0) : closeTour())}
+            icon={<Compass size={15} aria-hidden />}
           >
-            Components
+            Guided tour
           </ToolbarButton>
           <ToolbarButton
             buttonRef={setLayersAnchor}
             pressed={layersOpen}
             onClick={() => setLayersOpen((v) => !v)}
-            icon={<Layers size={15} aria-hidden />}
+            icon={<SlidersHorizontal size={15} aria-hidden />}
             haspopup
           >
-            Layers
+            Advanced options
           </ToolbarButton>
-          <ToolbarButton
-            pressed={legendOpen}
-            onClick={() => setLegendOpen((v) => !v)}
-            icon={<Info size={15} aria-hidden />}
-          >
-            Legend
-          </ToolbarButton>
-          {selectedId && mode !== 'internal' && (
-            <ToolbarButton
-              onClick={() => ensureVisible(selectedId, true)}
-              icon={<Crosshair size={15} aria-hidden />}
-            >
-              Focus
-            </ToolbarButton>
-          )}
         </div>
         <Popover
           anchor={layersAnchor}
           open={layersOpen}
           onClose={() => setLayersOpen(false)}
-          labelledBy="layers-title"
-          width={300}
+          labelledBy="advanced-title"
+          width={320}
         >
-          <div className="space-y-3 p-4 text-[13.5px]">
-            <h2 id="layers-title" className="font-serif text-lg text-fg">
-              Layers
+          <div className="space-y-4 p-4 text-[13.5px]">
+            <h2 id="advanced-title" className="font-serif text-lg text-fg">
+              Advanced options
             </h2>
-            {(
-              [
-                [
-                  'hotspot',
-                  'HotSpot implementation structures',
-                  'Hide to see only what the JVM Specification defines.',
-                ],
-                [
-                  'platform',
-                  'Build time, process and platform',
-                  'Tools, launcher, native libraries, OS and CPU.',
-                ],
-                ['edges', 'Connectors', 'Relationships between components.'],
-                [
-                  'parts',
-                  'Part numbers (exploded view)',
-                  'Numbered callouts, as in a parts diagram.',
-                ],
-              ] as const
-            ).map(([key, label, hint]) => (
-              <label key={key} className="flex cursor-pointer gap-2.5">
-                <input
-                  type="checkbox"
-                  checked={layers[key]}
-                  onChange={(event) =>
-                    setLayers((previous) => ({ ...previous, [key]: event.target.checked }))
-                  }
-                  className="mt-1 h-4 w-4 accent-[var(--color-exec-500)]"
+            {mode === 'anatomy' && (
+              <div>
+                <p className="mb-1.5 text-fg-muted">Map</p>
+                <SegmentedControl
+                  label="Map"
+                  size="sm"
+                  value={view}
+                  onChange={setView}
+                  segments={[
+                    { value: 'overview', label: 'Six main parts' },
+                    { value: 'full', label: `Full map (${Object.keys(COMPONENTS).length})` },
+                  ]}
                 />
-                <span>
-                  <span className="block text-fg">{label}</span>
-                  <span className="block text-[12.5px] text-fg-subtle">{hint}</span>
-                </span>
-              </label>
-            ))}
-            <div className="flex gap-2 border-t border-ink-600 pt-3">
-              <button
-                type="button"
-                onClick={() => setCollapsed(new Set(subsystemIds))}
-                className="rounded border border-ink-500 px-2 py-1 text-[12.5px] text-fg-muted hover:text-fg"
-              >
-                Collapse subsystems
-              </button>
-              <button
-                type="button"
-                onClick={() => setCollapsed(new Set())}
-                className="rounded border border-ink-500 px-2 py-1 text-[12.5px] text-fg-muted hover:text-fg"
-              >
-                Expand all
-              </button>
+              </div>
+            )}
+            <div className="space-y-2.5">
+              <p className="text-fg-muted">Show or hide parts</p>
+              {(
+                [
+                  [
+                    'hotspot',
+                    'HotSpot implementation details',
+                    'Hide them to see only what the JVM Specification defines.',
+                  ],
+                  [
+                    'platform',
+                    'Build time, process and platform',
+                    'Tools, launcher, native libraries, operating system and CPU.',
+                  ],
+                  ['edges', 'Connections', 'Lines between related parts.'],
+                  ['parts', 'Part numbers', 'Numbered callouts in the "Show the parts" view.'],
+                ] as const
+              ).map(([key, label, hint]) => (
+                <label key={key} className="flex cursor-pointer gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={layers[key]}
+                    onChange={(event) =>
+                      setLayers((previous) => ({ ...previous, [key]: event.target.checked }))
+                    }
+                    className="mt-1 h-4 w-4 accent-[var(--color-exec-500)]"
+                  />
+                  <span>
+                    <span className="block text-fg">{label}</span>
+                    <span className="block text-[12.5px] text-fg-subtle">{hint}</span>
+                  </span>
+                </label>
+              ))}
             </div>
+            <div className="flex flex-wrap gap-2 border-t border-ink-600 pt-3">
+              <button
+                type="button"
+                aria-pressed={legendOpen}
+                onClick={() => setLegendOpen((v) => !v)}
+                className="rounded border border-ink-500 px-2 py-1 text-[12.5px] text-fg-muted hover:text-fg"
+              >
+                {legendOpen ? 'Hide the diagram key' : 'Show the diagram key'}
+              </button>
+              <button
+                type="button"
+                aria-pressed={treeOpen}
+                onClick={() => setTreeOpen((v) => !v)}
+                className="rounded border border-ink-500 px-2 py-1 text-[12.5px] text-fg-muted hover:text-fg"
+              >
+                {treeOpen ? 'Hide the component list' : 'Browse all components'}
+              </button>
+              {!overview && mode !== 'internal' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed(new Set(subsystemIds))}
+                    className="rounded border border-ink-500 px-2 py-1 text-[12.5px] text-fg-muted hover:text-fg"
+                  >
+                    Collapse subsystems
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed(new Set())}
+                    className="rounded border border-ink-500 px-2 py-1 text-[12.5px] text-fg-muted hover:text-fg"
+                  >
+                    Expand all
+                  </button>
+                </>
+              )}
+            </div>
+            <p className="border-t border-ink-600 pt-3 text-[12.5px] text-fg-subtle">
+              Keyboard: Tab into the diagram, arrow keys move between parts, Enter selects, Escape
+              goes to the containing part. With the diagram itself focused, arrows pan and + / − / 0
+              zoom.
+            </p>
           </div>
         </Popover>
       </div>
+
+      {tourStep !== null && mode !== 'internal' && !wideEnoughForOverlay && (
+        <ExplorerTour step={tourStep} onStep={setTourStep} onClose={closeTour} placement="inline" />
+      )}
 
       <div className="relative flex min-h-0 flex-1 flex-col xl:flex-row">
         {treeOpen && (
@@ -478,9 +569,11 @@ export function AnatomyExplorer() {
                 <input
                   type="search"
                   aria-label="Filter components"
+                  name="component-filter"
+                  autoComplete="off"
                   value={filter}
                   onChange={(event) => setFilter(event.target.value)}
-                  placeholder="Filter components"
+                  placeholder="Filter components…"
                   className="h-8 w-full bg-transparent text-[13px] text-fg outline-none placeholder:text-fg-subtle"
                 />
               </div>
@@ -504,9 +597,20 @@ export function AnatomyExplorer() {
           </aside>
         )}
 
+        {mode === 'anatomy' && (
+          <div className="border-b border-ink-700 px-3 py-2 sm:hidden">
+            <MapToggle
+              overview={overview}
+              onToggle={() => setView(overview ? 'full' : 'overview')}
+            />
+          </div>
+        )}
         <div
           ref={canvasAreaRef}
-          className="relative h-[62vh] min-h-[380px] min-w-0 flex-1 xl:h-auto"
+          className={cn(
+            'relative min-w-0 xl:h-auto xl:flex-1',
+            overview ? 'h-[46vh] min-h-[300px]' : 'h-[62vh] min-h-[380px]',
+          )}
         >
           {mode === 'internal' ? (
             selectedId ? (
@@ -554,6 +658,16 @@ export function AnatomyExplorer() {
                   : 'Anatomy of the Java Virtual Machine'
               }
               defs={<DiagramDefs />}
+              extraControls={
+                selectedId ? (
+                  <IconButton
+                    label="Center selected part"
+                    onClick={() => ensureVisible(selectedId, true)}
+                  >
+                    <Crosshair size={16} aria-hidden />
+                  </IconButton>
+                ) : null
+              }
               onBackgroundClick={() => select(null)}
               onTransform={() => {
                 if (hoverRect) setHoverRect(null);
@@ -571,6 +685,7 @@ export function AnatomyExplorer() {
                   animate={!reducedMotion}
                   showEdges={layers.edges}
                   showPartNumbers={mode === 'exploded' && layers.parts}
+                  regions={overview ? OVERVIEW_LABELS : undefined}
                   onSelect={onCanvasSelect}
                   onHover={onHover}
                   onActivate={(id) => ensureVisible(id, true)}
@@ -578,6 +693,19 @@ export function AnatomyExplorer() {
                 />
               )}
             </AnatomyCanvas>
+          )}
+
+          {mode === 'anatomy' && (
+            <div className="absolute top-3 left-3 z-10 hidden sm:block">
+              <MapToggle
+                overview={overview}
+                onToggle={() => setView(overview ? 'full' : 'overview')}
+              />
+            </div>
+          )}
+
+          {tourStep !== null && mode !== 'internal' && wideEnoughForOverlay && (
+            <ExplorerTour step={tourStep} onStep={setTourStep} onClose={closeTour} />
           )}
 
           {hoveredDoc && hoverRect && mode !== 'internal' && (
@@ -615,13 +743,60 @@ export function AnatomyExplorer() {
         <aside
           ref={inspectorRef}
           aria-label={mode === 'execution' ? 'Execution narrative' : 'Component inspector'}
-          className="scroll-mt-16 border-t border-ink-700 bg-ink-950 xl:w-[440px] xl:shrink-0 xl:overflow-y-auto xl:border-t-0 xl:border-l"
+          className={cn(
+            'scroll-mt-16 border-t border-ink-700 bg-ink-950 transition-shadow xl:w-[440px] xl:shrink-0 xl:overflow-y-auto xl:border-t-0 xl:border-l',
+            tourStep === 3 && 'shadow-[inset_0_0_0_2px_var(--color-exec-400)]',
+          )}
         >
           {sidePanel}
         </aside>
       </div>
     </section>
   );
+}
+
+/** Switches between the six main parts and the full map. */
+function MapToggle({ overview, onToggle }: { overview: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="inline-flex h-9 items-center gap-2 rounded-full border border-ink-500 bg-ink-900/90 px-3.5 text-[13.5px] text-fg shadow-lg backdrop-blur transition-colors hover:border-exec-400"
+    >
+      {overview ? (
+        <>
+          <MapIcon size={15} aria-hidden className="text-exec-300" />
+          Show the full JVM map
+          <span className="text-fg-subtle tabular">{Object.keys(COMPONENTS).length} parts</span>
+        </>
+      ) : (
+        <>
+          <Minimize2 size={15} aria-hidden className="text-exec-300" />
+          Show the six main parts
+        </>
+      )}
+    </button>
+  );
+}
+
+/** The first walkthrough step in which a component takes part. */
+function walkthroughFor(
+  id: ComponentId,
+  watch: (scenarioId: string, step: number) => void,
+): { stepTitle: string; onWatch: () => void } | undefined {
+  // Prefer the most focused step: the fewest parts taking part besides this one.
+  let best: { scenarioId: string; index: number; title: string; size: number } | undefined;
+  for (const scenario of SCENARIOS)
+    scenario.steps.forEach((step, index) => {
+      if (step.active.includes(id) && (!best || step.active.length < best.size))
+        best = { scenarioId: scenario.id, index, title: step.title, size: step.active.length };
+    });
+  if (!best) return undefined;
+  const { scenarioId, index, title } = best;
+  return {
+    stepTitle: title.replace(/`/g, ''),
+    onWatch: () => watch(scenarioId, index),
+  };
 }
 
 function ToolbarButton({
@@ -690,7 +865,71 @@ function SelectionCrumb({ id, onNavigate }: { id: ComponentId; onNavigate: (id: 
   );
 }
 
-function WelcomePanel({ mode, onSelect }: { mode: ExplorerMode; onSelect: (id: string) => void }) {
+function WelcomePanel({
+  mode,
+  overview,
+  onSelect,
+  onFullMap,
+  onTour,
+}: {
+  mode: ExplorerMode;
+  overview: boolean;
+  onSelect: (id: string) => void;
+  onFullMap: () => void;
+  onTour: () => void;
+}) {
+  if (overview) {
+    return (
+      <div className="px-5 py-6">
+        <h2 className="font-serif text-[26px] leading-tight text-fg">The six main parts</h2>
+        <p className="mt-2 text-[15px] leading-relaxed text-fg-muted">
+          This is the Java Virtual Machine, the software machine that runs Java programs. Select a
+          part to see what is inside it and how it works.
+        </p>
+        <ul className="mt-4 space-y-1.5">
+          {JVM_REGIONS.map((region) => (
+            <li key={region.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(region.id)}
+                className="w-full rounded-lg border border-ink-600 bg-ink-850 px-3.5 py-2.5 text-left transition-colors hover:border-exec-400"
+              >
+                <span className="block text-[15px] font-medium text-fg">{region.title}</span>
+                <span className="block text-[13.5px] text-fg-muted">{region.blurb}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onFullMap}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-ink-500 px-3 text-[13.5px] text-fg hover:border-ink-400"
+          >
+            Show the full JVM map
+          </button>
+          <button
+            type="button"
+            onClick={onTour}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-ink-500 px-3 text-[13.5px] text-fg hover:border-ink-400"
+          >
+            Take the guided tour
+          </button>
+        </div>
+        <p className="mt-5 text-[14px] text-fg-muted">
+          New to Java?{' '}
+          <Link
+            to="/start"
+            className="text-exec-300 underline underline-offset-2 hover:text-exec-200"
+          >
+            Start with the first lesson
+          </Link>
+          : it explains each of these parts with one small program.
+        </p>
+      </div>
+    );
+  }
+
   const starts: ComponentId[] = [
     'class-loader-subsystem',
     'heap',
@@ -702,24 +941,21 @@ function WelcomePanel({ mode, onSelect }: { mode: ExplorerMode; onSelect: (id: s
   ];
   return (
     <div className="px-5 py-6">
-      <p className="kicker">Plate 01 · how to read it</p>
-      <h2 className="mt-2 font-serif text-[26px] leading-tight text-fg">
-        Every box is a real part of the JVM.
+      <h2 className="font-serif text-[26px] leading-tight text-fg">
+        {mode === 'exploded' ? 'Every part, pulled apart' : 'Every box is a real part of the JVM'}
       </h2>
       <div className="prose-ij mt-3 text-[14.5px]">
         <p>
-          Select any component to open its explanation, internal structure, connections, a verified
-          example, common misconceptions and sources. Connected components stay lit; everything else
-          fades.
+          Select any part to open its explanation. Connected parts stay lit; everything else fades.
         </p>
         <p>
           {mode === 'exploded'
-            ? 'In the exploded view the subsystems are pulled apart and every part is numbered. Select a part to see its connections.'
-            : 'Solid outlines are defined by the JVM Specification. Dashed outlines tagged HS are HotSpot (JDK 25) implementation structures. Dotted outlines sit outside the JVM.'}
+            ? 'In this view the subsystems are pulled apart and every part is numbered, as on an engineering drawing.'
+            : 'Solid outlines are defined by the JVM Specification. Dashed outlines tagged HS are HotSpot (JDK 25) implementation details. Dotted outlines are outside the JVM.'}
         </p>
       </div>
       {mode === 'exploded' && <PartsList onSelect={onSelect} />}
-      <p className="kicker mt-6">Good places to start</p>
+      <p className="mt-6 text-[13.5px] font-medium text-fg-muted">Good places to start</p>
       <ul className="mt-2 grid grid-cols-2 gap-2">
         {starts.map((id) => (
           <li key={id}>
@@ -733,10 +969,6 @@ function WelcomePanel({ mode, onSelect }: { mode: ExplorerMode; onSelect: (id: s
           </li>
         ))}
       </ul>
-      <p className="mt-6 text-[12.5px] text-fg-subtle">
-        Keyboard: Tab into the diagram, arrow keys move between components, Enter selects, Escape
-        goes to the parent. With the diagram itself focused, arrows pan and + / − / 0 zoom.
-      </p>
     </div>
   );
 }
@@ -754,7 +986,7 @@ function PartsList({ onSelect }: { onSelect: (id: string) => void }) {
   ];
   return (
     <div className="mt-6">
-      <p className="kicker">Parts list</p>
+      <p className="text-[13.5px] font-medium text-fg-muted">Parts list</p>
       {groups.map((group) => (
         <div key={group.root} className="mt-3">
           <p className="text-[12px] text-fg-subtle">{group.title}</p>

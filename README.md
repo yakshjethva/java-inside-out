@@ -2,9 +2,13 @@
 
 **Understand Java from the inside out.**
 
-Inside Java is an open-source, interactive atlas of Java and JVM internals. Instead of
-memorising diagrams, you explore one: a technical plate of the JVM where every part is a real
-component you can select, inspect, take apart and watch at work.
+Inside Java is an open-source, interactive way to learn what happens inside Java. Beginners start
+with one question, "What happens when you run a Java program?", and follow a single line of Java
+from source code to the processor. Experienced developers open the same machine as a technical
+plate of the JVM, where every part is a real component they can select, inspect, take apart and
+watch at work.
+
+**One machine. One source of truth. Multiple levels of understanding.**
 
 It is a static site. There is no backend, database, account, analytics or paid service, and
 after the first visit it keeps working offline. Once the deployment workflow has run on `main`,
@@ -12,24 +16,53 @@ the site is served from GitHub Pages at <https://yakshjethva.github.io/java-insi
 
 ## What is in this release
 
-This release completes milestones M1 (foundation and deployment) and M2 (the JVM anatomy). See
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) for the architecture and the full
-roadmap.
+This release completes milestones M1 (foundation and deployment) and M2 (the JVM anatomy) and
+reshapes them into a beginner-first learning experience. See
+[`docs/LEARNING_EXPERIENCE.md`](docs/LEARNING_EXPERIENCE.md) for how the site teaches and
+[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) for the architecture and roadmap.
 
-- **JVM Anatomy explorer** (`/anatomy`): 66 components (36 defined by the JVM Specification, 19
+- **Homepage:** the journey machine. Type a line of Java, press _Run it_ and follow it through
+  the compiler, the class file, the class loader, memory, the execution engine and the CPU to
+  the output. The class-file size and bytecode are real `javac` 25.0.4 output for your line.
+- **Start here** (`/start`): the guided first lesson, "What happens when you run a Java
+  program?", in seven short chapters (your first program, the compiler, the JVM, loading
+  classes, memory, execution, garbage collection) and a recap.
+  - Each chapter asks for a prediction, shows what really happens in an interactive exhibit,
+    explains it at your level, introduces one term, checks your understanding and links to the
+    same part on the JVM map.
+  - The exhibits can be stepped, paused and replayed: compiling `Hello.java`, loading a class,
+    `new Person("Mia")` on the stack and heap, a method becoming machine code, and an object
+    graph you can break and collect.
+  - The recap has a diagram, a teach-back in your own words and a five-question check.
+- **Explore the JVM** (`/anatomy`): 66 components (36 defined by the JVM Specification, 19
   HotSpot implementation structures and 11 platform parts) on one plate, with 39 relationships.
-  - Four modes: **Anatomy** (the complete map), **Exploded** (subsystems pulled apart with
-    numbered parts), **Internal** (12 hand-drawn dissections, such as the heap, a stack frame,
-    the template interpreter and the code cache) and **Execution** (5 step-by-step scenarios,
-    including JVM launch and `new Person("Alex")`).
-  - Pan and zoom, selection, hover labels, relationship highlighting, breadcrumbs, a searchable
-    component tree, layer visibility, collapse and expand, legend, and full keyboard operation.
-  - The inspector explains each component at a beginner and a technical level, with its purpose,
-    inputs and outputs, a verified example, real-world practice, misconceptions and sources.
-- **Learning paths**, a **glossary** of 82 terms at two levels (every term in the text opens in
-  place), **references** (122 primary sources, with "cited by" links), **About** and
-  **Contributing** pages.
+  - It opens on the six main parts (class loading, memory, execution engine, garbage
+    collection, native interface, platform). _Show the full JVM map_ reveals everything, and
+    the choice is remembered.
+  - Four views: **Overview** (the map), **Show the parts** (subsystems pulled apart with
+    numbered parts), **Look inside** (12 hand-drawn dissections, such as the heap, a stack
+    frame, the template interpreter and the code cache) and **Watch it run** (5 step-by-step
+    walkthroughs, including JVM launch and `new Person("Alex")`).
+  - _Find a component_, a first-visit guided tour and _Center selected part_; pan, zoom,
+    relationship highlighting, breadcrumbs and full keyboard operation. _Advanced options_
+    hold the component tree, layer visibility, the diagram key, collapse and expand, and
+    keyboard help.
+  - The inspector answers _What is this?_, _Picture it_, _What actually happens?_, _See it
+    working_, _Where does it fit?_ and _Check your understanding_. _Explore the technical
+    details_ keeps everything else: specification vs HotSpot, internal structure, inputs and
+    outputs, all connections, a verified example, practice, misconceptions, accuracy notes and
+    sources.
+- **Three explanation levels:** Simple, Developer and Deep dive, chosen once and used
+  everywhere. Twelve core concepts have all three, with an analogy that says where it stops
+  being accurate; elsewhere the Developer level falls back to the Deep dive and says so.
+- **Learn** (`/paths`): learning organised around questions, starting with the first lesson,
+  then seven more questions that link to what exists now and name the labs still to come,
+  followed by your progress, bookmarks and the full curriculum by subject.
+- A **glossary** of 84 terms explained simply and in depth (every term in the text opens in
+  place), **references** (123 primary sources, with "cited by" links), and **About** (accuracy
+  policy and project status) and **Contributing** pages.
 - Progress, bookmarks, quiz answers and preferences are stored in your browser only.
+  Preferences and progress saved by the previous release are migrated, never reset.
 
 Later milestones add the Class Loader Explorer, Runtime Memory Explorer, Execution Engine and
 Bytecode Explorers, GC Lab, Concurrency Lab and Collections Explorer. They are not linked from
@@ -141,20 +174,25 @@ new deployment shows up immediately, and fall back to the cached copy when you a
 
 ```
 src/
-  app/          router, root layout, service worker registration
-  pages/        one component per route
-  components/   anatomy canvas and nodes, inspector, code, timeline, learning, layout, ui
-  modules/jvm/  the anatomy explorer: layout, scene, modes, dissections
-  content/      JVM components, relationships, scenarios, quiz, learning paths
-  glossary/     glossary terms
-  data/         source registry and site navigation
-  simulators/   scenario playback state machine
-  hooks/, lib/  persistence, media queries, rich text, geometry, storage
-  sw/           service worker
+  app/            router, route table, root layout, service worker registration
+  pages/          one component per route
+  components/     anatomy canvas and nodes, inspector, code, timeline, learning, layout, ui
+  modules/
+    jvm/          the JVM explorer: layout, scene, views, tour, dissections
+    lesson/       the Start here lesson: exhibits, step controls, predictions, teach-back
+    journey/      the homepage journey machine
+  simulators/     pure models: class-file size and bytecode, tiering, reachability, playback
+  content/        JVM components and their teaching layer, regions, relationships,
+                  walkthroughs, quizzes, the first lesson, learning paths
+  glossary/       glossary terms
+  data/           source registry and site navigation
+  hooks/, lib/    learning state and migration, explanation levels, rich text, geometry, storage
+  sw/             service worker
 tests/
-  unit/         Vitest
-  e2e/          Playwright
-scripts/        GitHub Pages emulator used by the browser tests
+  unit/           Vitest
+  e2e/            Playwright
+scripts/          GitHub Pages emulator used by the browser tests
+docs/             implementation plan and learning-experience design
 ```
 
 ## Contributing
