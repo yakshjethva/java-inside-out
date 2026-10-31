@@ -37,6 +37,8 @@ interface AnatomyPlateProps {
   animate: boolean;
   showEdges: boolean;
   showPartNumbers: boolean;
+  /** Plain-language titles for collapsed regions (the overview map). */
+  regions?: Partial<Record<ComponentId, { title: string; blurb: string }>>;
   onSelect: (id: ComponentId | null) => void;
   onHover: (id: ComponentId | null) => void;
   onActivate: (id: ComponentId) => void;
@@ -113,6 +115,7 @@ export function AnatomyPlate({
   animate,
   showEdges,
   showPartNumbers,
+  regions,
   onSelect,
   onHover,
   onActivate,
@@ -182,8 +185,9 @@ export function AnatomyPlate({
       : undefined;
     const selected = selectedId === id;
     const dimmed = isDimmed(id, node.container);
+    const region = node.collapsedCount !== undefined ? regions?.[id] : undefined;
     const words = [
-      doc.name,
+      region ? `${region.title} (${doc.name})` : doc.name,
       doc.provenance === 'hotspot'
         ? 'HotSpot implementation'
         : doc.provenance === 'platform'
@@ -229,10 +233,11 @@ export function AnatomyPlate({
         related={Boolean(related?.has(id)) && !selected}
         state={state}
         collapsedCount={node.collapsedCount}
+        region={region}
         glyph={
           node.container ? null : glyphFor(id, node.rect, execution ? execution.frame : undefined)
         }
-        ariaLabel={`${words.join(', ')}. ${toPlainText(doc.summary)}`}
+        ariaLabel={`${words.join(', ')}. ${region ? region.blurb : toPlainText(doc.summary)}`}
         tabIndex={id === rovingId ? 0 : -1}
         animate={animate}
         onSelect={() => onSelect(id)}
@@ -261,7 +266,7 @@ export function AnatomyPlate({
       <SheetBackground scene={scene} />
       {mode === 'anatomy' && <TitleBlock />}
       {containers.map(renderNode)}
-      {mode === 'anatomy' && lod !== 'overview' && <Captions />}
+      {mode === 'anatomy' && lod !== 'overview' && <Captions scene={scene} />}
 
       {showEdges && (
         <motion.g
@@ -413,7 +418,19 @@ function TitleBlock() {
   );
 }
 
-function Captions() {
+/** Plate captions, except those that would sit inside a collapsed part. */
+function Captions({ scene }: { scene: Scene }) {
+  const collapsed = scene.nodes.filter((node) => node.collapsedCount !== undefined);
+  const visible = PLATE_CAPTIONS.filter(
+    (caption) =>
+      !collapsed.some(
+        ({ rect }) =>
+          caption.x >= rect.x &&
+          caption.x <= rect.x + rect.w &&
+          caption.y >= rect.y &&
+          caption.y <= rect.y + rect.h,
+      ),
+  );
   return (
     <g
       pointerEvents="none"
@@ -422,7 +439,7 @@ function Captions() {
       letterSpacing="0.12em"
       fill="var(--color-fg-subtle)"
     >
-      {PLATE_CAPTIONS.map((caption) =>
+      {visible.map((caption) =>
         caption.vertical ? (
           <text
             key={caption.text}

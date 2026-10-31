@@ -2,9 +2,10 @@ import { Crosshair, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { LevelSwitch } from '@/components/learning/LevelSwitch';
+import { LevelText } from '@/components/learning/LevelText';
 import { RichText } from '@/components/learning/RichText';
 import { SourceList } from '@/components/learning/SourceReference';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { getComponentDoc } from '@/content/jvm';
 import { GLOSSARY, getGlossaryEntry } from '@/glossary';
 import { usePreferences } from '@/hooks/useLearningState';
@@ -32,8 +33,9 @@ export function GlossaryPage() {
             [
               entry.term,
               ...(entry.aliases ?? []),
-              toPlainText(entry.beginner),
-              toPlainText(entry.technical),
+              toPlainText(entry.simple),
+              toPlainText(entry.developer ?? ''),
+              toPlainText(entry.deep),
             ].some((text) => text.toLowerCase().includes(q)),
           )
         : GLOSSARY,
@@ -46,8 +48,8 @@ export function GlossaryPage() {
     <>
       <PageHeader kicker="Reference" title="Glossary">
         <p>
-          {GLOSSARY.length} terms, each at two levels. Terms underlined with dots anywhere on the
-          site open these explanations in place.
+          {GLOSSARY.length} terms, each explained simply and in depth. Terms underlined with dots
+          anywhere on the site open these explanations in place.
         </p>
       </PageHeader>
       <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6">
@@ -57,21 +59,15 @@ export function GlossaryPage() {
             <span className="sr-only">Search the glossary</span>
             <input
               type="search"
+              name="glossary-search"
+              autoComplete="off"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search terms and definitions"
+              placeholder="Search terms and definitions…"
               className="h-10 w-full bg-transparent text-[14.5px] text-fg outline-none placeholder:text-fg-subtle"
             />
           </label>
-          <SegmentedControl
-            label="Explanation level"
-            value={preferences.level}
-            onChange={setLevel}
-            segments={[
-              { value: 'beginner', label: 'Beginner' },
-              { value: 'technical', label: 'Technical' },
-            ]}
-          />
+          <LevelSwitch value={preferences.level} onChange={setLevel} size="md" />
         </div>
 
         {!q && (
@@ -103,7 +99,7 @@ export function GlossaryPage() {
                 key={entry.id}
                 id={entry.id}
                 tabIndex={-1}
-                className="scroll-mt-32 py-6 outline-none focus-visible:bg-ink-900/60"
+                className="scroll-mt-32 py-6 outline-none [contain-intrinsic-size:auto_320px] [content-visibility:auto] focus-visible:bg-ink-900/60"
               >
                 <dt>
                   <span className="font-serif text-[24px] text-fg">{entry.term}</span>
@@ -115,9 +111,11 @@ export function GlossaryPage() {
                 </dt>
                 <dd className="mt-2 grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
                   <div>
-                    <RichText
+                    <LevelText
+                      content={entry}
+                      level={preferences.level}
                       className="prose-ij text-[15.5px]"
-                      text={preferences.level === 'beginner' ? entry.beginner : entry.technical}
+                      fallbackStyle="tag"
                     />
                     <p className="kicker mt-4">Why it exists</p>
                     <RichText className="prose-ij mt-1" text={entry.whyItExists} />

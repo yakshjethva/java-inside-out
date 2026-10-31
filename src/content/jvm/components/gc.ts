@@ -10,10 +10,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Automatic storage management: finds objects the program can no longer reach and reclaims their memory.',
-    beginner:
+    simple:
       'You create objects but never delete them. The garbage collector periodically finds objects that nothing in your program can reach any more and reuses their memory.',
-    technical:
-      'JVMS §2.5.3 requires heap storage to be reclaimed by an automatic storage management system and mandates no technique. Collectors start from [[gc-roots|GC roots]], determine [[reachability]], and reclaim the rest by sweeping, compacting or evacuating. HotSpot JDK 25 selects **G1** on server-class machines (at least 2 CPUs and about 1.8 GB of memory) and **Serial** otherwise (`gcConfig.cpp`, `os::is_server_class_machine`). Collectors coordinate with application threads through [[safepoint|safepoints]] and through barriers compiled into field accesses.',
+    deep: 'JVMS §2.5.3 requires heap storage to be reclaimed by an automatic storage management system and mandates no technique. Collectors start from [[gc-roots|GC roots]], determine [[reachability]], and reclaim the rest by sweeping, compacting or evacuating. HotSpot JDK 25 selects **G1** on server-class machines (at least 2 CPUs and about 1.8 GB of memory) and **Serial** otherwise (`gcConfig.cpp`, `os::is_server_class_machine`). Collectors coordinate with application threads through [[safepoint|safepoints]] and through barriers compiled into field accesses.',
     purpose:
       'Memory safety and productivity: no dangling pointers, no manual `free`, no double-free bugs.',
     internals: [
@@ -61,10 +60,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'References the collector treats as live by definition: thread stacks, static fields, JNI handles and VM internals.',
-    beginner:
+    simple:
       'The starting points of the search for live objects: variables in running methods, static fields of loaded classes, and a few references held by the JVM itself. Anything reachable from a root is kept.',
-    technical:
-      "Roots include: references in the local variables and operand stacks of every thread's frames (located precisely using stack maps / oop maps), static fields (held in `Class` mirrors reachable from loaded classes and their loaders), JNI local and global references, objects used as monitors, references embedded in compiled code, and VM-internal tables. Generational and regional collectors also treat references from outside the collected area as roots for that collection (G1 remembered sets, card tables).",
+    deep: "Roots include: references in the local variables and operand stacks of every thread's frames (located precisely using stack maps / oop maps), static fields (held in `Class` mirrors reachable from loaded classes and their loaders), JNI local and global references, objects used as monitors, references embedded in compiled code, and VM-internal tables. Generational and regional collectors also treat references from outside the collected area as roots for that collection (G1 remembered sets, card tables).",
     purpose: 'Define precisely which objects the program can still use.',
     internals: [
       'Thread stacks',
@@ -95,10 +93,9 @@ export const gcComponents: ComponentDoc[] = [
     provenance: 'spec',
     scope: 'shared',
     summary: 'Traces the object graph from the roots and marks every reachable object.',
-    beginner:
+    simple:
       'Starting from the roots, the collector follows every reference and marks each object it reaches. Unmarked objects are garbage.',
-    technical:
-      'Marking traverses the object graph and records live objects (for example in mark bitmaps). Its cost grows with the number of **live** objects and references, not with garbage. Concurrent markers (G1, ZGC, Shenandoah) trace while the application runs and use barriers to stay correct while references change: G1 and Shenandoah use snapshot-at-the-beginning (SATB) write barriers; ZGC uses load barriers on reference loads. A short pause finishes marking.',
+    deep: 'Marking traverses the object graph and records live objects (for example in mark bitmaps). Its cost grows with the number of **live** objects and references, not with garbage. Concurrent markers (G1, ZGC, Shenandoah) trace while the application runs and use barriers to stay correct while references change: G1 and Shenandoah use snapshot-at-the-beginning (SATB) write barriers; ZGC uses load barriers on reference loads. A short pause finishes marking.',
     purpose: 'Determine the live set.',
     internals: [
       'Mark bitmaps',
@@ -127,10 +124,9 @@ export const gcComponents: ComponentDoc[] = [
     provenance: 'spec',
     scope: 'shared',
     summary: 'Reclaims unmarked space where it lies, e.g. onto free lists; leaves fragmentation.',
-    beginner:
+    simple:
       'After marking, the collector can walk through memory and free every unmarked object in place. Simple, but it leaves free memory scattered in gaps.',
-    technical:
-      'Mark-sweep collectors scan the heap and link unmarked space into free lists without moving objects. It avoids copying but fragments the heap and makes allocation slower than bump-pointer allocation. In HotSpot JDK 25 no collector reclaims ordinary young objects by sweeping: they evacuate live objects instead. G1 frees whole regions found completely empty after marking. The classic concurrent mark-sweep collector (CMS) was removed in JDK 14.',
+    deep: 'Mark-sweep collectors scan the heap and link unmarked space into free lists without moving objects. It avoids copying but fragments the heap and makes allocation slower than bump-pointer allocation. In HotSpot JDK 25 no collector reclaims ordinary young objects by sweeping: they evacuate live objects instead. G1 frees whole regions found completely empty after marking. The classic concurrent mark-sweep collector (CMS) was removed in JDK 14.',
     purpose: 'Reclaim space without the cost of moving objects.',
     internals: ['Heap walk', 'Free lists'],
     inputs: ['Mark information'],
@@ -158,10 +154,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Moves live objects together (or copies them to new space) and updates every reference to them.',
-    beginner:
+    simple:
       'The collector slides or copies the surviving objects next to each other, so the free memory forms one big block again.',
-    technical:
-      'Compacting and copying collectors relocate live objects, install forwarding information, and update all references to the new locations. Copying ("evacuation") is used by G1 for young and mixed collections and by ZGC and Shenandoah for concurrent relocation, where load barriers or forwarding tables let application threads find moved objects safely. Afterwards allocation can use fast bump pointers. This is why Java references cannot be treated as stable addresses.',
+    deep: 'Compacting and copying collectors relocate live objects, install forwarding information, and update all references to the new locations. Copying ("evacuation") is used by G1 for young and mixed collections and by ZGC and Shenandoah for concurrent relocation, where load barriers or forwarding tables let application threads find moved objects safely. Afterwards allocation can use fast bump pointers. This is why Java references cannot be treated as stable addresses.',
     purpose: 'Eliminate fragmentation and enable cheap allocation.',
     internals: [
       'Forwarding pointers / tables',
@@ -191,10 +186,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Six interchangeable implementations, selected with -XX:+Use…GC; G1 is the default on server-class machines.',
-    beginner:
+    simple:
       'HotSpot ships several garbage collectors with different trade-offs. You pick one when starting the JVM; most applications keep the default, G1.',
-    technical:
-      'Exactly one collector is active per JVM: Serial, Parallel, G1, ZGC, Shenandoah (included in OpenJDK builds from most vendors, but not in Oracle JDK builds) or Epsilon (experimental, no reclamation). Without an explicit choice HotSpot uses G1 on server-class machines and Serial otherwise.',
+    deep: 'Exactly one collector is active per JVM: Serial, Parallel, G1, ZGC, Shenandoah (included in OpenJDK builds from most vendors, but not in Oracle JDK builds) or Epsilon (experimental, no reclamation). Without an explicit choice HotSpot uses G1 on server-class machines and Serial otherwise.',
     purpose: 'Let applications trade throughput, latency and memory footprint.',
     internals: ['Serial', 'Parallel', 'G1', 'ZGC', 'Shenandoah', 'Epsilon'],
     inputs: ['Command-line selection or ergonomics'],
@@ -228,10 +222,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Region-based, generational, mostly-concurrent collector with a pause-time goal; the default.',
-    beginner:
+    simple:
       'The default collector. It splits the heap into many small regions and cleans the regions with the most garbage first, aiming to keep pauses short.',
-    technical:
-      'Heap of equal-size regions; young collections evacuate eden and survivor regions; concurrent marking finds old regions with the most garbage, which mixed collections evacuate incrementally ("garbage first"). Pause-time goal `MaxGCPauseMillis` = 200 ms. Uses SATB pre-write barriers and card-marking post-write barriers, remembered sets per region, and humongous regions for large objects. Default since JDK 9 (JEP 248).',
+    deep: 'Heap of equal-size regions; young collections evacuate eden and survivor regions; concurrent marking finds old regions with the most garbage, which mixed collections evacuate incrementally ("garbage first"). Pause-time goal `MaxGCPauseMillis` = 200 ms. Uses SATB pre-write barriers and card-marking post-write barriers, remembered sets per region, and humongous regions for large objects. Default since JDK 9 (JEP 248).',
     purpose: 'Good throughput with predictable pauses on a wide range of heap sizes.',
     internals: [
       'Regions (eden, survivor, old, humongous)',
@@ -262,10 +255,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Low-latency collector that marks and relocates concurrently; generational only since JDK 24.',
-    beginner:
+    simple:
       'A collector built for very short pauses, even with huge heaps. Almost all of its work happens while your program keeps running.',
-    technical:
-      'ZGC performs marking, relocation and reference updating concurrently, using coloured pointers and load barriers so application threads always see the current location of an object. Pauses do not grow with heap or live-set size. Production since JDK 15 (JEP 377), generational since JDK 21 (JEP 439), generational by default in JDK 23 (JEP 474), and the non-generational mode was removed in JDK 24 (JEP 490). Enabled with `-XX:+UseZGC`.',
+    deep: 'ZGC performs marking, relocation and reference updating concurrently, using coloured pointers and load barriers so application threads always see the current location of an object. Pauses do not grow with heap or live-set size. Production since JDK 15 (JEP 377), generational since JDK 21 (JEP 439), generational by default in JDK 23 (JEP 474), and the non-generational mode was removed in JDK 24 (JEP 490). Enabled with `-XX:+UseZGC`.',
     purpose: 'Sub-millisecond pauses for latency-sensitive services with large heaps.',
     internals: [
       'Coloured pointers',
@@ -302,10 +294,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Low-pause collector with concurrent compaction; generational mode became a product feature in JDK 25.',
-    beginner:
+    simple:
       'Another low-pause collector. It can move objects while your program runs, so pauses stay short regardless of heap size.',
-    technical:
-      'Shenandoah performs concurrent marking and concurrent evacuation using load-reference barriers, keeping pause times independent of heap size. Production since JDK 15 (JEP 379). JDK 25 made its generational mode a product feature (JEP 521); the default mode remains single-generation. Enabled with `-XX:+UseShenandoahGC` in builds that include it.',
+    deep: 'Shenandoah performs concurrent marking and concurrent evacuation using load-reference barriers, keeping pause times independent of heap size. Production since JDK 15 (JEP 379). JDK 25 made its generational mode a product feature (JEP 521); the default mode remains single-generation. Enabled with `-XX:+UseShenandoahGC` in builds that include it.',
     purpose: 'Low and predictable pause times.',
     internals: ['Load-reference barriers', 'Concurrent evacuation', 'Optional generational mode'],
     inputs: ['`-XX:+UseShenandoahGC`'],
@@ -332,10 +323,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Generational, stop-the-world collector that uses many threads to maximize throughput.',
-    beginner:
+    simple:
       'Stops the program while it cleans, but uses all CPU cores to finish quickly. Good for batch jobs where total speed matters more than pause length.',
-    technical:
-      'Contiguous young generation (eden + two survivor spaces) collected by parallel copying; old generation collected by parallel mark-compact. All collection work happens in stop-the-world pauses using `ParallelGCThreads` threads. Enabled with `-XX:+UseParallelGC`.',
+    deep: 'Contiguous young generation (eden + two survivor spaces) collected by parallel copying; old generation collected by parallel mark-compact. All collection work happens in stop-the-world pauses using `ParallelGCThreads` threads. Enabled with `-XX:+UseParallelGC`.',
     purpose: 'Maximum application throughput when pause length is not critical.',
     internals: ['Parallel scavenge (young)', 'Parallel mark-compact (old)'],
     inputs: ['`-XX:+UseParallelGC`'],
@@ -361,10 +351,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Single-threaded, stop-the-world generational collector; the default on small machines.',
-    beginner:
+    simple:
       'The simplest collector: one thread does all the cleaning while the program waits. Efficient for small heaps and single-CPU machines.',
-    technical:
-      'Copying young generation and mark-compact old generation, all single-threaded and stop-the-world. HotSpot selects it automatically when the machine is not "server class" (fewer than 2 CPUs or less than about 1.8 GB of memory), which includes many small containers. Enabled with `-XX:+UseSerialGC`.',
+    deep: 'Copying young generation and mark-compact old generation, all single-threaded and stop-the-world. HotSpot selects it automatically when the machine is not "server class" (fewer than 2 CPUs or less than about 1.8 GB of memory), which includes many small containers. Enabled with `-XX:+UseSerialGC`.',
     purpose: 'Minimal overhead and footprint for small heaps.',
     internals: ['Copying young collection', 'Mark-compact old collection'],
     inputs: ['`-XX:+UseSerialGC` or ergonomics on small machines'],
@@ -391,10 +380,9 @@ export const gcComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Allocates but never reclaims; the JVM exits with OutOfMemoryError when the heap is exhausted.',
-    beginner:
+    simple:
       'A "collector" that never collects. When memory runs out, the program stops. Useful for testing and measuring.',
-    technical:
-      'Experimental no-op collector (JEP 318, JDK 11): it implements allocation but no reclamation. Used for performance testing (to measure GC overhead), memory-pressure testing and very short-lived jobs. Requires `-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC`.',
+    deep: 'Experimental no-op collector (JEP 318, JDK 11): it implements allocation but no reclamation. Used for performance testing (to measure GC overhead), memory-pressure testing and very short-lived jobs. Requires `-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC`.',
     purpose: 'Remove GC from the picture for experiments.',
     internals: ['Bump-pointer allocation only'],
     inputs: ['`-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC`'],

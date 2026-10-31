@@ -458,6 +458,12 @@ export const REFERENCES = {
     'JDK 22',
     'A supported alternative to JNI for calling native code.',
   ),
+  'jep-458': jep(
+    458,
+    'Launch Multi-File Source-Code Programs',
+    'JDK 22',
+    'Extends source-file mode to programs made of several source files; they are still compiled in memory before running.',
+  ),
   'jep-472': jep(
     472,
     'Prepare to Restrict the Use of JNI',

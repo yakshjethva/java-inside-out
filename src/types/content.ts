@@ -40,6 +40,24 @@ export interface Misconception {
   truth: RichText;
 }
 
+/**
+ * An analogy that opens the door to a concept without replacing it: every
+ * important part of the picture is mapped to the real thing, and the point
+ * where the picture stops being accurate is stated.
+ */
+export interface Analogy {
+  /** The familiar picture, in one or two sentences. */
+  picture: RichText;
+  /** Each part of the picture and what it stands for. */
+  mapping: { picture: string; real: RichText }[];
+  /** Where the analogy stops being accurate. */
+  limits: RichText;
+}
+
+/** Interactive models from the first lesson, reused in the inspector. */
+export type DemoId =
+  'compile' | 'jvm-parts' | 'class-loading' | 'memory' | 'execution' | 'reachability';
+
 export interface ComponentDoc {
   id: ComponentId;
   /** Full name, e.g. "Run-time constant pool". */
@@ -52,10 +70,23 @@ export interface ComponentDoc {
   parent?: ComponentId;
   provenance: Provenance;
   scope?: Scope;
-  /** One sentence, used for hover labels and lists. */
+  /** One sentence, used for hover labels and lists ("What is this?"). */
   summary: string;
-  beginner: RichText;
-  technical: RichText;
+  /** Simple level: plain words, no programming knowledge assumed. */
+  simple: RichText;
+  /**
+   * Developer level: real Java code and APIs, and what a developer observes.
+   * Optional while content is written; the deep dive stands in, and says so.
+   */
+  developer?: RichText;
+  /** Deep dive: specification sections, HotSpot implementation, exact terms. */
+  deep: RichText;
+  /** An analogy for the simple level, mapped to the real concept, with its limits. */
+  analogy?: Analogy;
+  /** Interactive from the first lesson that shows this component at work. */
+  demo?: DemoId;
+  /** One question for "Check your understanding". */
+  check?: QuizQuestion;
   purpose: RichText;
   /** Internal structure, one item per part. */
   internals: RichText[];
@@ -94,8 +125,9 @@ export interface GlossaryEntry {
   id: string;
   term: string;
   aliases?: string[];
-  beginner: RichText;
-  technical: RichText;
+  simple: RichText;
+  developer?: RichText;
+  deep: RichText;
   whyItExists: RichText;
   /** Where the concept lives in the JVM anatomy, when it has a place there. */
   componentId?: ComponentId;
@@ -145,8 +177,9 @@ export interface FrameSnapshot {
 export interface ScenarioStep {
   id: string;
   title: string;
-  beginner: RichText;
-  technical: RichText;
+  simple: RichText;
+  developer?: RichText;
+  deep: RichText;
   /** Components that take part in this step. */
   active: ComponentId[];
   /** Animated movement between components. */

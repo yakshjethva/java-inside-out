@@ -118,7 +118,7 @@ export function CodeBlock({
           {title ?? LANGUAGE_LABEL[language]}
         </span>
         <span className="flex shrink-0 items-center gap-2">
-          <span className="font-mono text-[10.5px] tracking-wider text-fg-subtle uppercase">
+          <span className="font-mono text-[11px] tracking-wider text-fg-subtle uppercase">
             {LANGUAGE_LABEL[language]}
           </span>
           <button
@@ -131,7 +131,7 @@ export function CodeBlock({
           </button>
         </span>
       </figcaption>
-      <div className="code-surface">
+      <div className="code-surface" translate="no">
         {usesShiki && html ? (
           // Shiki output is generated locally from our own content (no user input).
           <div dangerouslySetInnerHTML={{ __html: html }} />
@@ -147,10 +147,13 @@ export function CodeBlock({
       </div>
       {output && (
         <div className="border-t border-ink-700 bg-ink-950/60">
-          <p className="px-3 pt-2 font-mono text-[10.5px] tracking-wider text-fg-subtle uppercase">
+          <p className="px-3 pt-2 font-mono text-[11px] tracking-wider text-fg-subtle uppercase">
             Output
           </p>
-          <pre className="overflow-x-auto px-3 pt-1 pb-3 text-[12px] leading-relaxed text-ok-300">
+          <pre
+            translate="no"
+            className="overflow-x-auto px-3 pt-1 pb-3 text-[12px] leading-relaxed text-ok-300"
+          >
             {output}
           </pre>
         </div>

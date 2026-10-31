@@ -26,7 +26,7 @@ export function AccuracyNote({
         className,
       )}
     >
-      <p className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[0.12em] text-fg-subtle uppercase">
+      <p className="flex items-center gap-1.5 text-[12.5px] font-medium text-fg-muted">
         <Ruler size={13} aria-hidden className="text-exec-300" />
         {title}
       </p>

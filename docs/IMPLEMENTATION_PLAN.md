@@ -4,7 +4,8 @@
 
 This is the working plan for the project. It is short on purpose: it records the decisions that shape
 the code base, the milestone order, and what "done" means for each milestone. Update it when a
-decision changes.
+decision changes. How the site teaches (navigation, the first lesson, explanation levels,
+progressive disclosure) is described in [`LEARNING_EXPERIENCE.md`](LEARNING_EXPERIENCE.md).
 
 ## 0. Starting point
 
@@ -39,33 +40,43 @@ The four layers are kept separate so contributors can change one without touchin
 
 ## 2. Sitemap
 
-| Route            | Page                      | Milestone | Status in this release        |
-| ---------------- | ------------------------- | --------- | ----------------------------- |
-| `/`              | Home                      | M1        | Built (with live JVM preview) |
-| `/paths`         | Learning Paths            | M1        | Built (roadmap is honest)     |
-| `/anatomy`       | JVM Anatomy               | M2        | Built (4 modes)               |
-| `/glossary`      | Glossary                  | M1/M2     | Built                         |
-| `/references`    | References                | M1/M2     | Built                         |
-| `/about`         | About                     | M1        | Built                         |
-| `/contributing`  | Contributing              | M1        | Built                         |
-| `/class-loading` | Class Loader Explorer     | M3        | Not routed yet                |
-| `/memory`        | Runtime Memory Explorer   | M4        | Not routed yet                |
-| `/execution`     | Execution Engine Explorer | M5        | Not routed yet                |
-| `/bytecode`      | Bytecode Explorer         | M5        | Not routed yet                |
-| `/gc`            | Garbage Collection Lab    | M6        | Not routed yet                |
-| `/concurrency`   | Concurrency Lab           | M7        | Not routed yet                |
-| `/collections`   | Collections Explorer      | M7        | Not routed yet                |
+| Route            | Page (navigation label)   | Milestone | Status in this release                  |
+| ---------------- | ------------------------- | --------- | --------------------------------------- |
+| `/`              | Home                      | M1, LX    | Built (journey machine, beginner path)  |
+| `/start`         | Start here                | LX        | Built (7 chapters and a recap)          |
+| `/paths`         | Learn                     | M1, LX    | Built (question-led, roadmap is honest) |
+| `/anatomy`       | Explore the JVM           | M2, LX    | Built (overview of six parts, 4 views)  |
+| `/glossary`      | Glossary                  | M1/M2     | Built                                   |
+| `/references`    | References (under More)   | M1/M2     | Built                                   |
+| `/about`         | About (under More)        | M1        | Built (includes project status)         |
+| `/contributing`  | Contributing (under More) | M1        | Built                                   |
+| `/class-loading` | Class Loader Explorer     | M3        | Not routed yet                          |
+| `/memory`        | Runtime Memory Explorer   | M4        | Not routed yet                          |
+| `/execution`     | Execution Engine Explorer | M5        | Not routed yet                          |
+| `/bytecode`      | Bytecode Explorer         | M5        | Not routed yet                          |
+| `/gc`            | Garbage Collection Lab    | M6        | Not routed yet                          |
+| `/concurrency`   | Concurrency Lab           | M7        | Not routed yet                          |
+| `/collections`   | Collections Explorer      | M7        | Not routed yet                          |
 
-Pages that are not built are **not linked**. The Learning Paths page lists them as "in development"
-with their milestone, as plain text. No dead navigation, no empty pages.
+LX is the learning-experience redesign (see [`LEARNING_EXPERIENCE.md`](LEARNING_EXPERIENCE.md)).
+The header shows Start here, Learn, Explore the JVM and Glossary, with References, About,
+Contributing and Project status under More; mobile shows the same items in the same order.
 
-Selection state lives in the URL (`/anatomy?c=heap&mode=internal`) so every component view can be
-shared and the back button works.
+Pages that are not built are **not linked**. The Learn page and About → Project status list them
+as "in development" with their milestone, as plain text. No dead navigation, no empty pages.
+
+Selection state lives in the URL so every view can be shared and the back button works:
+`/anatomy?c=heap&mode=internal&view=full`, `/anatomy?mode=execution&s=jit&step=3`,
+`/start?chapter=memory`. Explorer `mode` values keep their original names
+(`anatomy|exploded|internal|execution`); the interface calls them Overview, Show the parts, Look
+inside and Watch it run.
 
 ## 3. Design system
 
-**Mood:** a dark technical atlas: blueprint grid, hairline boundaries, numbered plates, callouts and
-leader lines. Dense, but every mark explains something.
+**Mood:** a science museum after dark. Reading surfaces are calm (Inter at 17 px, about 70
+characters per line, sentence case); each visualization is a lit exhibit case (`.exhibit`) on the
+dark blueprint canvas and moves only when the learner acts. The JVM plate keeps the technical-atlas
+language: blueprint grid, hairline boundaries, numbered parts, callouts and leader lines.
 
 **Typography** (self-hosted, OFL-licensed, no font CDN):
 
@@ -90,12 +101,15 @@ and build-time structures use a dotted outline. The legend on every diagram expl
 **Tokens** are CSS custom properties declared in `src/styles/index.css` through Tailwind v4 `@theme`, so
 SVG and HTML share one palette.
 
-**Reusable components:** `AnatomyCanvas`, `ArchitectureNode`, `RelationshipConnector`,
-`ComponentInspector`, `ExplodedView` (exploded-mode layout + callouts), `InternalView`,
-`ExecutionTimeline`, `StepController`, `CodePanel`, `GlossaryTerm` (tooltip), `KnowledgeCheck`,
-`AccuracyNote`, `SourceReference`, `Breadcrumbs`. The memory components (`MemoryRegion`, `StackFrame`,
-`HeapObject`, `ReferenceArrow`) and `BytecodeInstruction` arrive with the milestones that need them
-(M4, M5), so nothing ships unused.
+**Reusable components:** `AnatomyCanvas`, `ArchitectureNode` (including the collapsed region
+cards of the overview), `RelationshipConnector`, `ComponentInspector`, `ComponentSearch`,
+`ExplorerTour`, `InternalView`, `ExecutionTimeline`, `StepController`, `CodeBlock`, `GlossaryTerm`
+(in-place popover), `KnowledgeCheck`, `AccuracyNote`, `SourceReference`, `LevelSwitch` and
+`LevelText` (explanation levels). The lesson adds `ExhibitFrame` (an exhibit with a live caption
+and an accuracy note), `StepControls` with `useStepper`, `PredictionCard`, `TermCard`, `TeachBack`
+and `ReferenceArrows` (arrows between a stack variable and the object it refers to);
+`JourneyMachine` follows one line of Java on the homepage. The full memory and bytecode explorers
+(`MemoryRegion`, `HeapObject`, `BytecodeInstruction`) arrive with M4 and M5.
 
 ## 4. JVM anatomical component inventory (M2)
 
@@ -128,8 +142,11 @@ type check or the integrity tests.
 ComponentDoc {
   id, name, label, subsystem, parent?, provenance: 'spec' | 'hotspot' | 'platform',
   scope?: 'shared' | 'per-thread' | 'per-class' | 'process' | 'build',
-  summary,                          // one line, used for hover labels
-  beginner, technical: RichText,    // the two explanation levels
+  summary,                          // one line: hover labels and "What is this?"
+  simple, developer?, deep: RichText, // the three explanation levels
+  analogy?: { picture, mapping: { picture, real }[], limits },
+  demo?: DemoId,                    // a lesson exhibit reused in "See it working"
+  check?: QuizQuestion,             // "Check your understanding"
   purpose, internals: RichText[],   // what it is for, what it is made of
   inputs, outputs: string[],
   example?: { title, language, code, output?, verifiedWith },
@@ -139,13 +156,27 @@ ComponentDoc {
   accuracyNote?, version?,          // e.g. "HotSpot, JDK 25"
   references: { source, section?, note? }[],
 }
-Relationship { id, from, to, kind: 'control' | 'data' | 'delegation' | 'lifecycle' | 'exception' | 'native', label, description }
-GlossaryTerm { id, term, aliases, beginner, technical, whyItExists, componentId?, related, misconception? }
-Reference    { id, title, publisher, url, version, kind: 'spec' | 'jep' | 'source' | 'guide' | 'api' }
-Scenario     { id, title, summary, accuracyNote, code?, steps: Step[] }
-Step         { title, beginner, technical, active[], flows[], states?, codeLine?, bytecodePc? }
-Quiz         { id, questions: { prompt, kind, options: { text, correct, explanation }[] }[] }
+Relationship  { id, from, to, kind: 'control' | 'data' | 'delegation' | 'lifecycle' | 'exception' | 'native', label, description }
+GlossaryEntry { id, term, aliases, simple, developer?, deep, whyItExists, componentId?, related, misconception? }
+Reference     { id, title, publisher, url, version, kind: 'spec' | 'jep' | 'source' | 'guide' | 'api' }
+Scenario      { id, title, summary, accuracyNote, code?, steps: Step[] }
+Step          { title, simple, developer?, deep, active[], flows[], states?, codeLine?, bytecodePc? }
+Quiz          { id, questions: { prompt, kind, options: { text, correct, explanation }[] }[] }
+JvmRegion     { id, title, blurb, role, family }      // the six parts of the explorer overview
+Lesson        { id, title, summary, chapters: LessonChapter[] }
+LessonChapter { id, title, question, takeaway, minutes, prediction, exhibit, component,
+                explanation: LeveledText, term, tryIt, check, listings?, accuracyNote, references }
 ```
+
+The core-concept fields (`developer`, `analogy`, `demo`, `check`) are written in
+`src/content/jvm/teaching.ts` and merged into the component docs, so the teaching layer can be
+reviewed on its own. `LeveledText` (`src/lib/levels.ts`) resolves a level and falls back from
+Developer to Deep dive, marking the fallback so the interface can say so.
+
+Learner data (`src/hooks/useLearningState.ts`) is stored in `localStorage` under
+`inside-java:v1:preferences` and `inside-java:v1:progress`. Each store has a validator and a
+migration: data from an older release is repaired field by field (for example `beginner` →
+`simple`, `technical` → `deep`), never discarded.
 
 `RichText` is a small, tested inline syntax: `` `code` ``, `**strong**`, `[[glossary-id|label]]` for
 clickable glossary terms, and `[label](https://…)` for links. It keeps content readable in a diff
@@ -165,9 +196,13 @@ Layout coordinates live beside the visualization (`src/modules/jvm/layout.ts`), 
   is committed to state only when it crosses a level-of-detail threshold. Edges use orthogonal routes
   computed from anchor sides; edges to collapsed or hidden nodes re-attach to the nearest visible
   ancestor.
-- **Modes:** Anatomy (complete map), Exploded (subsystems and parts separated with numbered callouts),
-  Internal (dissection of the selection), Execution (scenario playback with the camera following
-  the active components).
+- **Modes** (interface names in brackets): Anatomy [Overview] (the map: six collapsed regions by
+  default, or the complete map), Exploded [Show the parts] (subsystems and parts separated with
+  numbered callouts), Internal [Look inside] (dissection of the selection), Execution [Watch it
+  run] (scenario playback with the camera following the active components).
+- **Lesson and journey:** the Start here exhibits and the homepage journey machine are React and
+  SVG components driven by pure simulators (`src/simulators/journey.ts`, `tiering.ts`,
+  `reachability.ts`) and a shared stepper (restart, previous, play/pause, next).
 - **Accessibility:** every node is a focusable `button` role with a descriptive label; the component
   tree is a keyboard-navigable `tree`; diagram keyboard shortcuts (`+`, `-`, `0`, arrows, `Esc`);
   `prefers-reduced-motion` disables animated flows and camera tweens; colour never carries meaning
@@ -180,12 +215,14 @@ Layout coordinates live beside the visualization (`src/modules/jvm/layout.ts`), 
 - **Accuracy:** every claim cites a source id from `src/data/references.ts`. Bytecode, flag
   defaults and log lines were produced with OpenJDK 25.0.4 (`javac`, `javap -c -v`,
   `-XX:+PrintFlagsFinal`, `-Xlog`). HotSpot internals were checked against the `jdk-25-ga` source tag.
-- **Tests:** unit tests for rich text, geometry/routing, exploded layout, playback, storage and
-  content integrity (every id, relationship, glossary link and citation resolves); component tests
-  for the inspector, knowledge check, component tree and the anatomy page; Playwright tests (desktop
-  and mobile) that run against the production build served by `scripts/serve-pages.mjs`, which
-  reproduces GitHub Pages on the `/java-inside-out/` subpath (redirects, `404.html`, status codes),
-  including an offline reload.
+- **Tests:** unit tests for rich text, geometry/routing, exploded layout, playback, storage, the
+  learning-state migration, the simulators and content integrity (every id, relationship, glossary
+  link, citation, lesson listing and teaching-layer entry resolves); component tests for the
+  inspector, knowledge check, component tree, the explorer overview and tour, the header, the first
+  lesson and the journey machine; Playwright tests (desktop and mobile) that run against the
+  production build served by `scripts/serve-pages.mjs`, which reproduces GitHub Pages on the
+  `/jvm-inside-out/` subpath (redirects, `404.html`, status codes), including an offline reload, the
+  whole first lesson, reduced motion and the migration of stored data.
 
 ### Milestones
 
@@ -193,6 +230,7 @@ Layout coordinates live beside the visualization (`src/modules/jvm/layout.ts`), 
 | --------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | M1        | Setup, design system, layout, navigation, home, paths, glossary, references, about, contributing, Pages deploy | Builds, tests pass, subpath build verified locally             |
 | M2        | JVM anatomy: all subsystems, nested parts, inspector, relationships, 4 modes, layers, quiz                     | Acceptance criteria 3–6, 9–12 below                            |
+| LX        | Learning experience: Start here lesson, journey machine, explorer overview, three levels, inspector disclosure | Done in this release; see `LEARNING_EXPERIENCE.md`             |
 | M3        | Class Loader Explorer (delegation simulator, loading/linking/init walkthrough), MDX lessons                    | Criterion 7                                                    |
 | M4        | Runtime Memory Explorer (stack/heap lab, `Person` timeline, Monaco)                                            | Criterion 8                                                    |
 | M5        | Execution Engine Explorer and Bytecode Explorer (verified `javap` listings)                                    | Operand stack/locals stepping works for the shipped examples   |
@@ -202,20 +240,20 @@ Layout coordinates live beside the visualization (`src/modules/jvm/layout.ts`), 
 
 ### First-release acceptance criteria and where they are met
 
-| #   | Criterion                                        | Milestone                                                       |
-| --- | ------------------------------------------------ | --------------------------------------------------------------- |
-| 1   | Deploys to GitHub Pages                          | M1 (workflow; needs Pages enabled by the repository owner)      |
-| 2   | Homepage loads from a subpath                    | M1 (verified locally by Playwright against `/java-inside-out/`) |
-| 3   | JVM anatomy shows all major subsystems           | M2                                                              |
-| 4   | Every major component is selectable              | M2                                                              |
-| 5   | Inspector has substantive technical explanations | M2                                                              |
-| 6   | Relationships are navigable                      | M2                                                              |
-| 7   | Working class-loading walkthrough                | M3 (M2 ships the launch scenario as a preview)                  |
-| 8   | Memory Explorer shows stack, heap and references | M4 (M2 ships the `new Person("Alex")` scenario as a preview)    |
-| 9   | Every diagram has accuracy notes                 | M2                                                              |
-| 10  | Works without a backend or paid service          | M1                                                              |
-| 11  | README covers local development and deployment   | M1                                                              |
-| 12  | No critical navigation or interaction is broken  | Every milestone                                                 |
+| #   | Criterion                                        | Milestone                                                      |
+| --- | ------------------------------------------------ | -------------------------------------------------------------- |
+| 1   | Deploys to GitHub Pages                          | M1 (workflow; needs Pages enabled by the repository owner)     |
+| 2   | Homepage loads from a subpath                    | M1 (verified locally by Playwright against `/jvm-inside-out/`) |
+| 3   | JVM anatomy shows all major subsystems           | M2                                                             |
+| 4   | Every major component is selectable              | M2                                                             |
+| 5   | Inspector has substantive technical explanations | M2                                                             |
+| 6   | Relationships are navigable                      | M2                                                             |
+| 7   | Working class-loading walkthrough                | M3 (previews: the launch walkthrough, Start here chapter 4)    |
+| 8   | Memory Explorer shows stack, heap and references | M4 (previews: `new Person("Alex")`, Start here chapter 5)      |
+| 9   | Every diagram has accuracy notes                 | M2                                                             |
+| 10  | Works without a backend or paid service          | M1                                                             |
+| 11  | README covers local development and deployment   | M1                                                             |
+| 12  | No critical navigation or interaction is broken  | Every milestone                                                |
 
 ## 7. GitHub Pages deployment plan
 
@@ -248,9 +286,13 @@ src/
     learning/     GlossaryTerm, KnowledgeCheck, RichText, AccuracyNote, SourceReference
     layout/       AppShell, header, footer, mobile navigation
     ui/           buttons, badges, segmented control, callouts
-  modules/jvm/    anatomy page module: layout, explorer state, internal dissections
-  simulators/     scenario playback state machine (pure TS)
-  content/        JVM component docs, relationships, scenarios, quiz, learning paths
+  modules/
+    jvm/          explorer: layout, explorer state, overview regions, tour, internal dissections
+    lesson/       Start here: exhibits, stepper, prediction, term card, teach-back
+    journey/      homepage journey machine
+  simulators/     pure TS models: playback, journey (class-file size, bytecode), tiering, reachability
+  content/        JVM component docs, teaching layer, regions, relationships, scenarios, quiz,
+                  the first lesson, learning paths, questions, project status
   glossary/       glossary terms
   data/           reference registry, site metadata, navigation
   hooks/          pan/zoom, persistence, media queries, reduced motion

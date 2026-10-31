@@ -44,6 +44,8 @@ interface AnatomyCanvasProps {
   className?: string;
   defs?: ReactNode;
   overlay?: ReactNode;
+  /** Extra buttons shown above the zoom controls. */
+  extraControls?: ReactNode;
   onBackgroundClick?: () => void;
   onTransform?: (transform: ViewTransform) => void;
   children: (lod: Lod) => ReactNode;
@@ -69,6 +71,7 @@ export function AnatomyCanvas({
   className,
   defs,
   overlay,
+  extraControls,
   onBackgroundClick,
   onTransform,
   children,
@@ -405,6 +408,7 @@ export function AnatomyCanvas({
       {overlay}
       {controls && (
         <div className="absolute right-3 bottom-3 flex flex-col gap-1.5" data-canvas-controls>
+          {extraControls}
           <IconButton
             label="Zoom in"
             onClick={() =>

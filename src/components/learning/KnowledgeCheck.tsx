@@ -19,7 +19,7 @@ const KIND_LABEL: Record<QuizQuestion['kind'], string> = {
  * explanation for the chosen option and for the correct one. Results are
  * kept in this browser.
  */
-export function KnowledgeCheck({ quiz }: { quiz: Quiz }) {
+export function KnowledgeCheck({ quiz, compact = false }: { quiz: Quiz; compact?: boolean }) {
   const progress = useProgress();
   const saved = progress.quizzes[quiz.id];
   const answers = saved?.answers ?? {};
@@ -43,26 +43,31 @@ export function KnowledgeCheck({ quiz }: { quiz: Quiz }) {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[14px] text-fg-muted" aria-live="polite">
-          {answeredCount === 0
-            ? `${quiz.questions.length} questions. Answers are explained, right or wrong.`
-            : `${correctCount} correct of ${answeredCount} answered (${quiz.questions.length} in total).`}
-        </p>
+        {compact ? (
+          <span />
+        ) : (
+          <p className="text-[14px] text-fg-muted" aria-live="polite">
+            {answeredCount === 0
+              ? `${quiz.questions.length} ${quiz.questions.length === 1 ? 'question' : 'questions'}. Answers are explained, right or wrong.`
+              : `${correctCount} correct of ${answeredCount} answered (${quiz.questions.length} in total).`}
+          </p>
+        )}
         {answeredCount > 0 && (
           <button
             type="button"
             onClick={reset}
             className="inline-flex items-center gap-1.5 rounded-md border border-ink-500 px-2.5 py-1 text-[13px] text-fg-muted hover:text-fg"
           >
-            <RotateCcw size={13} aria-hidden /> Start again
+            <RotateCcw size={13} aria-hidden /> {compact ? 'Try again' : 'Start again'}
           </button>
         )}
       </div>
-      <ol className="mt-4 space-y-4">
+      <ol className={cn('space-y-4', compact ? 'mt-1' : 'mt-4')}>
         {quiz.questions.map((question, index) => (
           <li key={question.id}>
             <Question
               question={question}
+              compact={compact}
               number={index + 1}
               chosen={answers[question.id]}
               onAnswer={(id) => answer(question, id)}
@@ -76,11 +81,13 @@ export function KnowledgeCheck({ quiz }: { quiz: Quiz }) {
 
 function Question({
   question,
+  compact,
   number,
   chosen,
   onAnswer,
 }: {
   question: QuizQuestion;
+  compact: boolean;
   number: number;
   chosen: string | undefined;
   onAnswer: (optionId: string) => void;
@@ -93,10 +100,15 @@ function Question({
   return (
     <fieldset className="rounded-lg border border-ink-600 bg-ink-900/60 p-4">
       <legend className="sr-only">Question {number}</legend>
-      <p className="font-mono text-[11px] tracking-wider text-fg-subtle uppercase">
-        Question {number} · {KIND_LABEL[question.kind]}
-      </p>
-      <RichText className="prose-ij mt-1 text-[15px] text-fg" text={question.prompt} />
+      {!compact && (
+        <p className="text-[12.5px] text-fg-subtle">
+          Question {number} · {KIND_LABEL[question.kind]}
+        </p>
+      )}
+      <RichText
+        className={cn('prose-ij text-[15px] text-fg', !compact && 'mt-1')}
+        text={question.prompt}
+      />
       {question.code && (
         <CodeBlock
           className="mt-3"

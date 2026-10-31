@@ -1,10 +1,10 @@
 import { cn } from '@/lib/cn';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
-export type ButtonSize = 'sm' | 'md';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap';
+  'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:pointer-events-none disabled:opacity-50';
 
 const variants: Record<ButtonVariant, string> = {
   primary:
@@ -14,8 +14,10 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-[13px]',
-  md: 'h-10 px-4 text-sm',
+  sm: 'h-8 px-3 text-[13px] whitespace-nowrap',
+  md: 'h-10 px-4 text-sm whitespace-nowrap',
+  /* Calls to action: wrap on small screens rather than overflow. */
+  lg: 'min-h-12 rounded-lg px-5 py-2.5 text-center text-[16px] leading-snug',
 };
 
 export function buttonClasses(

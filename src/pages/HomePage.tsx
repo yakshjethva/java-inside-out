@@ -1,383 +1,450 @@
-import { ArrowRight, BookmarkCheck, Clock3 } from 'lucide-react';
+import { ArrowRight, Check, Clock3 } from 'lucide-react';
+import { lazy, Suspense, useCallback, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
-import { CodeBlock } from '@/components/code/CodeBlock';
 import { ButtonLink } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { COMPONENT_LIST } from '@/content/jvm';
 import { SCENARIOS } from '@/content/jvm/scenarios';
-import { LEARNING_PATHS } from '@/content/paths';
+import { FIRST_RUN } from '@/content/lesson/firstRun';
+import { REFERENCE_IDS } from '@/data/references';
 import { useProgress } from '@/hooks/useLearningState';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { AnatomyPreview } from '@/modules/jvm/AnatomyPreview';
+import { cn } from '@/lib/cn';
+import { JourneyMachine } from '@/modules/journey/JourneyMachine';
+import { DISSECTIONS } from '@/modules/jvm/internals/registry';
 
-const PERSON_SCENARIO = SCENARIOS.find((s) => s.id === 'new-person')!;
+// The full plate is for people who already know Java; it loads after the page.
+const AnatomyPreview = lazy(() =>
+  import('@/modules/jvm/AnatomyPreview').then((m) => ({ default: m.AnatomyPreview })),
+);
 
-const STOPS = [
-  { step: 0, title: 'Resolve and load Person', where: 'Class loader subsystem' },
-  { step: 1, title: 'Allocate 16 bytes in eden', where: 'Heap · TLAB' },
-  { step: 3, title: 'Push "Alex" from the constant pool', where: 'Operand stack' },
-  { step: 4, title: 'Push a frame for the constructor', where: 'JVM stack' },
-  { step: 6, title: 'Store the reference in p1', where: 'Local variables' },
-  { step: 9, title: 'Drop both references: eligible for GC', where: 'GC roots' },
+const CHAPTERS = FIRST_RUN.chapters;
+
+/**
+ * Mounts its children only when the placeholder comes near the viewport, so a
+ * visitor who never scrolls that far does not download or render them.
+ * Without IntersectionObserver the children mount at once.
+ */
+function WhenNearViewport({
+  children,
+  fallback,
+  className,
+}: {
+  children: ReactNode;
+  fallback: ReactNode;
+  className?: string;
+}) {
+  const [near, setNear] = useState(() => typeof IntersectionObserver === 'undefined');
+  const ref = useCallback(
+    (element: HTMLDivElement | null) => {
+      if (!element || near) return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            setNear(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: '400px 0px' },
+      );
+      observer.observe(element);
+      return () => observer.disconnect();
+    },
+    [near],
+  );
+  return (
+    <div ref={ref} className={className}>
+      {near ? children : fallback}
+    </div>
+  );
+}
+
+const MAP_FALLBACK = (
+  <div className="flex h-full items-center justify-center text-[14px] text-fg-subtle">
+    Loading the map…
+  </div>
+);
+const LESSON_MINUTES = CHAPTERS.reduce((sum, chapter) => sum + chapter.minutes, 0);
+
+const DISCOVER: {
+  question: string;
+  chapter: string;
+  glyph: 'compile' | 'memory' | 'run' | 'gc';
+}[] = [
+  {
+    question: 'What does a compiler do, and what is bytecode?',
+    chapter: 'compiler',
+    glyph: 'compile',
+  },
+  { question: 'Where do your objects and variables live?', chapter: 'memory', glyph: 'memory' },
+  {
+    question: 'How does Java run your code, and why does it get faster?',
+    chapter: 'execution',
+    glyph: 'run',
+  },
+  { question: 'What happens to memory your program stops using?', chapter: 'gc', glyph: 'gc' },
 ];
 
-const LABS = [
-  {
-    name: 'JVM Anatomy',
-    what: 'Explore every subsystem; anatomy, exploded, internal and execution views',
-    milestone: 'M2',
-    to: '/anatomy',
-  },
-  {
-    name: 'Class Loader Explorer',
-    what: 'Delegation simulator and lifecycle walkthrough',
-    milestone: 'M3',
-  },
-  {
-    name: 'Memory Lab',
-    what: 'Step through stack and heap, reference by reference',
-    milestone: 'M4',
-  },
-  {
-    name: 'Bytecode Explorer',
-    what: 'Verified javap output with operand stack and locals',
-    milestone: 'M5',
-  },
-  {
-    name: 'Garbage Collection Lab',
-    what: 'Build object graphs and run a simulated collection',
-    milestone: 'M6',
-  },
-  { name: 'Concurrency Lab', what: 'Reorder two threads and watch lost updates', milestone: 'M7' },
-  {
-    name: 'Collections Explorer',
-    what: 'HashMap buckets, collisions, treeification, resizing',
-    milestone: 'M7',
-  },
-];
+/** Small drawings in the plate's own visual language, one per question. */
+function Glyph({ kind }: { kind: (typeof DISCOVER)[number]['glyph'] }) {
+  const common = { fill: 'none', strokeWidth: 1.6, strokeLinecap: 'round' as const };
+  return (
+    <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden className="shrink-0">
+      {kind === 'compile' && (
+        <>
+          <rect
+            x="4"
+            y="10"
+            width="15"
+            height="20"
+            rx="2"
+            stroke="var(--color-plat-400)"
+            {...common}
+          />
+          <path d="M22 20 h6" stroke="var(--color-exec-400)" {...common} />
+          <path d="M26 17 l3 3 -3 3" stroke="var(--color-exec-400)" {...common} />
+          <rect
+            x="31"
+            y="10"
+            width="13"
+            height="20"
+            rx="2"
+            stroke="var(--color-rt-400)"
+            {...common}
+          />
+          <path d="M34 16 h7 M34 20 h5 M34 24 h7" stroke="var(--color-rt-300)" {...common} />
+        </>
+      )}
+      {kind === 'memory' && (
+        <>
+          <rect
+            x="4"
+            y="8"
+            width="16"
+            height="10"
+            rx="2"
+            stroke="var(--color-exec-400)"
+            {...common}
+          />
+          <rect
+            x="4"
+            y="22"
+            width="16"
+            height="10"
+            rx="2"
+            stroke="var(--color-exec-400)"
+            {...common}
+          />
+          <circle cx="16" cy="27" r="1.8" fill="var(--color-rt-300)" />
+          <path d="M18 27 C 26 27, 26 18, 30 18" stroke="var(--color-rt-300)" {...common} />
+          <rect
+            x="30"
+            y="12"
+            width="14"
+            height="12"
+            rx="3"
+            stroke="var(--color-rt-400)"
+            {...common}
+          />
+        </>
+      )}
+      {kind === 'run' && (
+        <>
+          <path d="M6 34 h36" stroke="var(--color-ink-400)" {...common} />
+          <path d="M8 30 l6 -6 6 3 7 -9 7 -6 7 -4" stroke="var(--color-exec-400)" {...common} />
+          <rect
+            x="34"
+            y="34"
+            width="10"
+            height="8"
+            rx="1.5"
+            stroke="var(--color-plat-400)"
+            strokeDasharray="2 2"
+            {...common}
+          />
+        </>
+      )}
+      {kind === 'gc' && (
+        <>
+          <rect
+            x="4"
+            y="16"
+            width="12"
+            height="10"
+            rx="2"
+            stroke="var(--color-ok-400)"
+            {...common}
+          />
+          <path d="M16 21 h8" stroke="var(--color-rt-300)" {...common} />
+          <rect
+            x="24"
+            y="16"
+            width="12"
+            height="10"
+            rx="2"
+            stroke="var(--color-ok-400)"
+            {...common}
+          />
+          <rect
+            x="30"
+            y="32"
+            width="14"
+            height="10"
+            rx="2"
+            stroke="var(--color-warn-400)"
+            strokeDasharray="3 2.5"
+            {...common}
+          />
+          <path d="M8 36 l4 4 M12 36 l-4 4" stroke="var(--color-warn-400)" {...common} />
+        </>
+      )}
+    </svg>
+  );
+}
 
 export function HomePage() {
   usePageTitle();
   const progress = useProgress();
-  const explored = Object.keys(progress.explored).length;
+  const done = progress.lessons[FIRST_RUN.id] ?? {};
+  const nextChapter = CHAPTERS.find((chapter) => !(chapter.id in done));
+  const started = CHAPTERS.some((chapter) => chapter.id in done);
+  const finished = !nextChapter;
 
   return (
     <>
+      {/* 1. What is this, who is it for, where do I begin? */}
       <section className="relative overflow-hidden border-b border-ink-700">
-        <div className="blueprint absolute inset-0 opacity-70" aria-hidden />
-        <div className="relative mx-auto grid max-w-[1680px] gap-8 px-4 pt-10 pb-8 sm:px-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:pt-14">
-          <div className="flex flex-col justify-center">
-            <p className="kicker">An open-source atlas of the JVM · Java SE 25</p>
-            <h1 className="mt-3 font-serif text-[52px] leading-[0.95] tracking-tight text-fg sm:text-[68px]">
-              <span className="block text-[13px] font-sans font-semibold tracking-[0.42em] text-rt-300 uppercase sm:text-[14px]">
-                Inside Java
-              </span>
-              <span className="mt-3 block">Understand Java from the inside out.</span>
+        <div className="relative mx-auto grid max-w-[1320px] gap-10 px-4 pt-12 pb-14 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center lg:gap-14 lg:pt-20 lg:pb-20">
+          <div>
+            <h1 className="font-serif text-[42px] leading-[1.04] tracking-tight text-balance text-fg sm:text-[60px]">
+              Ever wondered what happens when you run Java code?
             </h1>
-            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-fg-muted">
-              Explore the machinery behind every line of Java code. Every part of the plate on this
-              page is a real component of the JVM: select one.
+            <p className="mt-6 max-w-[34rem] text-[18px] leading-relaxed text-fg-muted sm:text-[19px]">
+              Follow your Java program on a journey through the JVM. See how code becomes
+              instructions, where objects live, and how your computer runs everything.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <ButtonLink to="/anatomy" variant="primary">
-                Explore JVM Anatomy <ArrowRight size={16} aria-hidden />
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <ButtonLink to="/start" variant="primary" size="lg">
+                Start learning <ArrowRight size={17} aria-hidden />
               </ButtonLink>
-              <ButtonLink to="/paths" variant="secondary">
-                Start Learning
+              <ButtonLink to="/anatomy" variant="secondary" size="lg">
+                I already know Java. Explore the JVM.
               </ButtonLink>
             </div>
-            <p className="mt-4 text-[13px] text-fg-subtle">
-              Memory Lab: in development (milestone M4).{' '}
-              <Link
-                to="/paths#memory"
-                className="text-exec-300 underline underline-offset-2 hover:text-exec-200"
-              >
-                See what it will cover
-              </Link>
-              .
+            {started && nextChapter && (
+              <p className="mt-5 text-[15px] text-fg-muted">
+                Welcome back.{' '}
+                <Link
+                  to={`/start?chapter=${nextChapter.id}`}
+                  className="text-exec-300 underline underline-offset-2 hover:text-exec-200"
+                >
+                  Continue with chapter {CHAPTERS.indexOf(nextChapter) + 1}: {nextChapter.title}
+                </Link>
+              </p>
+            )}
+            <p className="mt-8 max-w-[34rem] text-[15px] text-fg-subtle">
+              For curious beginners, students and working Java developers. Free, open source, and it
+              works offline.
             </p>
-            <dl className="mt-8 grid max-w-md grid-cols-3 gap-4 border-t border-ink-600 pt-5">
-              <div>
-                <dt className="kicker">Components</dt>
-                <dd className="mt-1 font-serif text-3xl text-fg tabular">
-                  {COMPONENT_LIST.length}
-                </dd>
-              </div>
-              <div>
-                <dt className="kicker">Dissections</dt>
-                <dd className="mt-1 font-serif text-3xl text-fg tabular">12</dd>
-              </div>
-              <div>
-                <dt className="kicker">Walkthroughs</dt>
-                <dd className="mt-1 font-serif text-3xl text-fg tabular">{SCENARIOS.length}</dd>
-              </div>
-            </dl>
           </div>
-          <div className="h-[460px] overflow-hidden rounded-xl border border-ink-600 bg-ink-950/80 shadow-[0_40px_120px_-40px_rgb(79_155_245/0.25)] sm:h-[560px] lg:h-[640px]">
-            <AnatomyPreview />
-          </div>
+          <JourneyMachine />
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-[1240px] px-4 sm:px-6">
+      <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+        {/* 2. What you'll discover */}
+        <section aria-labelledby="discover" className="py-16 lg:py-20">
+          <h2 id="discover" className="font-serif text-[32px] leading-tight text-fg sm:text-[38px]">
+            What you’ll discover
+          </h2>
+          <ul className="mt-8 grid gap-x-12 gap-y-6 md:grid-cols-2">
+            {DISCOVER.map((item) => (
+              <li key={item.chapter}>
+                <Link
+                  to={`/start?chapter=${item.chapter}`}
+                  className="group flex items-center gap-4 rounded-xl py-1"
+                >
+                  <Glyph kind={item.glyph} />
+                  <span className="text-[18px] leading-snug text-fg group-hover:text-exec-200">
+                    {item.question}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* 3. The beginner path */}
         <section
-          aria-labelledby="one-line"
-          className="grid gap-8 py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+          aria-labelledby="first-path"
+          className="grid gap-10 border-t border-ink-700 py-16 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:py-20"
         >
           <div>
-            <p className="kicker">Follow one line through the machine</p>
-            <h2 id="one-line" className="mt-2 font-serif text-[34px] leading-tight text-fg">
-              What really happens when Java runs{' '}
-              <code className="font-mono text-[0.8em] text-exec-200">new Person("Alex")</code>?
+            <h2
+              id="first-path"
+              className="font-serif text-[32px] leading-tight text-fg sm:text-[38px]"
+            >
+              Start with one question
             </h2>
-            <p className="mt-3 max-w-xl text-[15.5px] leading-relaxed text-fg-muted">
-              One statement touches the class loader, the run-time constant pool, the heap, the
-              operand stack, a new stack frame and, eventually, the garbage collector. Each stop
-              below opens the execution walkthrough at that instruction, with the real bytecode from
-              JDK 25.
+            <p className="mt-4 max-w-md text-[17px] leading-relaxed text-fg-muted">
+              <span className="text-fg">{FIRST_RUN.title}</span> Seven short chapters, about{' '}
+              {LESSON_MINUTES} minutes, no programming knowledge needed. Each one asks you to
+              predict, shows you what really happens, and checks that it made sense.
             </p>
-            <CodeBlock
-              className="mt-5"
-              code={PERSON_SCENARIO.listings[0]!.code}
-              language="java"
-              title="Main.java"
-              verifiedWith="OpenJDK 25.0.4"
-            />
+            <ButtonLink
+              to={
+                finished
+                  ? '/start?chapter=recap'
+                  : started && nextChapter
+                    ? `/start?chapter=${nextChapter.id}`
+                    : '/start'
+              }
+              variant="primary"
+              className="mt-6"
+            >
+              {finished
+                ? 'Review what you now know'
+                : started && nextChapter
+                  ? `Continue with chapter ${CHAPTERS.indexOf(nextChapter) + 1}`
+                  : 'Begin the first lesson'}
+              <ArrowRight size={16} aria-hidden />
+            </ButtonLink>
           </div>
-          <ol className="relative space-y-2.5 lg:pt-10">
-            {STOPS.map((stop, index) => (
-              <li key={stop.step}>
+          <ol
+            className="grid gap-x-8 gap-y-1 sm:grid-cols-2"
+            aria-label="Chapters of the first lesson"
+          >
+            {CHAPTERS.map((chapter, i) => (
+              <li key={chapter.id}>
                 <Link
-                  to={`/anatomy?mode=execution&s=new-person${stop.step ? `&step=${stop.step}` : ''}`}
-                  className="group flex items-center gap-4 rounded-lg border border-ink-600 bg-ink-900/70 px-4 py-3 transition-colors hover:border-exec-500/60 hover:bg-ink-850"
+                  to={`/start?chapter=${chapter.id}`}
+                  className="group flex gap-3.5 rounded-xl px-2 py-3 hover:bg-ink-850"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-exec-500/50 font-mono text-[13px] text-exec-200">
-                    {index + 1}
+                  <span
+                    className={cn(
+                      'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border font-mono text-[12.5px]',
+                      chapter.id in done
+                        ? 'border-ok-500/60 text-ok-300'
+                        : 'border-ink-500 text-fg-muted',
+                    )}
+                  >
+                    {chapter.id in done ? <Check size={14} aria-label="Completed" /> : i + 1}
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] text-fg">{stop.title}</span>
-                    <span className="block text-[12.5px] text-fg-subtle">{stop.where}</span>
+                  <span>
+                    <span className="block text-[16px] font-medium text-fg group-hover:text-exec-200">
+                      {chapter.title}
+                    </span>
+                    <span className="block text-[14.5px] text-fg-muted">{chapter.question}</span>
                   </span>
-                  <ArrowRight
-                    size={16}
-                    aria-hidden
-                    className="text-fg-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-exec-300"
-                  />
                 </Link>
               </li>
             ))}
           </ol>
         </section>
 
-        <section aria-labelledby="your-progress" className="border-t border-ink-700 py-14">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="kicker">Pick up where you left off</p>
-              <h2 id="your-progress" className="mt-2 font-serif text-[30px] text-fg">
-                {progress.recent.length ? 'Recently explored' : 'Good places to start'}
-              </h2>
-            </div>
-            {explored > 0 && (
-              <p className="text-[13.5px] text-fg-subtle">
-                {explored} of {COMPONENT_LIST.length} components explored · stored only in this
-                browser
-              </p>
+        {/* 4. A direct route for experienced developers */}
+        <section
+          aria-labelledby="experienced"
+          className="grid gap-10 border-t border-ink-700 py-16 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:py-20"
+        >
+          <div>
+            <h2
+              id="experienced"
+              className="font-serif text-[32px] leading-tight text-fg sm:text-[38px]"
+            >
+              Already write Java?
+            </h2>
+            <p className="mt-4 max-w-md text-[17px] leading-relaxed text-fg-muted">
+              Go straight to the machinery: {COMPONENT_LIST.length} components on one plate,{' '}
+              {Object.keys(DISSECTIONS).length} dissections, {SCENARIOS.length} walkthroughs with
+              real <code className="font-mono text-[0.9em] text-fg">javap</code> output, and{' '}
+              {REFERENCE_IDS.length} primary sources, from the JVM Specification to the OpenJDK
+              source.
+            </p>
+            <ul className="mt-6 space-y-2.5 text-[16px]">
+              {[
+                ['/anatomy?view=full', 'Open the full map of the JVM'],
+                ['/anatomy?c=heap&mode=internal', 'Look inside the heap'],
+                ['/anatomy?mode=execution&s=jit', 'Watch a hot method become machine code'],
+                ['/references', 'Read the sources'],
+              ].map(([to, label]) => (
+                <li key={to}>
+                  <Link
+                    to={to!}
+                    className="inline-flex items-center gap-1.5 text-exec-300 underline decoration-exec-500/40 underline-offset-4 hover:text-exec-200 hover:decoration-exec-300"
+                  >
+                    {label} <ArrowRight size={14} aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {progress.recent.length > 0 && (
+              <div className="mt-8">
+                <p
+                  id="home-recently-explored"
+                  className="flex items-center gap-1.5 text-[14px] text-fg-muted"
+                >
+                  <Clock3 size={14} aria-hidden /> Recently explored
+                </p>
+                <ul aria-labelledby="home-recently-explored" className="mt-2 flex flex-wrap gap-2">
+                  {progress.recent.slice(0, 6).map((item) => (
+                    <li key={item.key}>
+                      <Link
+                        to={item.href}
+                        className="inline-block rounded-md border border-ink-600 px-2.5 py-1 text-[14px] text-fg-muted hover:border-exec-400 hover:text-fg"
+                      >
+                        {item.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
-          <ul className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            {(progress.recent.length
-              ? progress.recent.slice(0, 8).map((item) => ({
-                  key: item.key,
-                  title: item.title,
-                  href: item.href,
-                  hint: 'Explored',
-                  icon: <Clock3 size={14} aria-hidden />,
-                }))
-              : [
-                  {
-                    key: 'heap',
-                    title: 'Heap',
-                    href: '/anatomy?c=heap',
-                    hint: 'Where objects live',
-                    icon: null,
-                  },
-                  {
-                    key: 'stack-frame',
-                    title: 'Stack frame',
-                    href: '/anatomy?c=stack-frame&mode=internal',
-                    hint: 'Spec vs HotSpot, side by side',
-                    icon: null,
-                  },
-                  {
-                    key: 'parent-delegation',
-                    title: 'Parent delegation',
-                    href: '/anatomy?c=parent-delegation',
-                    hint: 'Who loads your classes',
-                    icon: null,
-                  },
-                  {
-                    key: 'jit',
-                    title: 'A hot method becomes machine code',
-                    href: '/anatomy?mode=execution&s=jit',
-                    hint: 'Execution walkthrough',
-                    icon: null,
-                  },
-                ]
-            ).map((item) => (
-              <li key={item.key}>
-                <Link
-                  to={item.href}
-                  className="block rounded-lg border border-ink-600 bg-ink-900/60 px-4 py-3 hover:border-rt-500/60 hover:bg-ink-850"
-                >
-                  <span className="flex items-center gap-1.5 text-[12px] text-fg-subtle">
-                    {item.icon}
-                    {item.hint}
-                  </span>
-                  <span className="mt-1 block text-[15px] text-fg">{item.title}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {progress.bookmarks.length > 0 && (
-            <div className="mt-6">
-              <p className="flex items-center gap-1.5 text-[13px] text-fg-subtle">
-                <BookmarkCheck size={14} aria-hidden /> Bookmarks
-              </p>
-              <ul className="mt-2 flex flex-wrap gap-2">
-                {progress.bookmarks.map((bookmark) => (
-                  <li key={bookmark.key}>
-                    <Link
-                      to={bookmark.href}
-                      className="rounded border border-exec-500/40 bg-exec-900/40 px-2.5 py-1 text-[13px] text-exec-200 hover:border-exec-400"
-                    >
-                      {bookmark.title}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <WhenNearViewport
+            className="h-[340px] overflow-hidden rounded-2xl border border-ink-600 bg-ink-950 sm:h-[460px]"
+            fallback={MAP_FALLBACK}
+          >
+            <Suspense fallback={MAP_FALLBACK}>
+              <AnatomyPreview />
+            </Suspense>
+          </WhenNearViewport>
         </section>
 
-        <section aria-labelledby="labs" className="border-t border-ink-700 py-14">
-          <p className="kicker">Laboratories</p>
-          <h2 id="labs" className="mt-2 font-serif text-[30px] text-fg">
-            Interactive, not illustrated
+        {/* 5. Accuracy */}
+        <section
+          aria-labelledby="accuracy"
+          className="grid gap-8 border-t border-ink-700 py-16 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:py-20"
+        >
+          <h2 id="accuracy" className="font-serif text-[32px] leading-tight text-fg sm:text-[38px]">
+            How we keep it accurate
           </h2>
-          <p className="mt-2 max-w-2xl text-[15px] text-fg-muted">
-            Each laboratory is built and verified one milestone at a time. Only finished ones are
-            linked.
-          </p>
-          <div className="mt-6 overflow-hidden rounded-lg border border-ink-600">
-            <table className="w-full text-left text-[14px]">
-              <caption className="sr-only">Laboratories and their status</caption>
-              <thead className="bg-ink-850 text-[12px] text-fg-subtle">
-                <tr>
-                  <th scope="col" className="px-4 py-2.5 font-medium">
-                    Laboratory
-                  </th>
-                  <th scope="col" className="hidden px-4 py-2.5 font-medium sm:table-cell">
-                    What you do
-                  </th>
-                  <th scope="col" className="px-4 py-2.5 font-medium">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-ink-700">
-                {LABS.map((lab) => (
-                  <tr key={lab.name} className="bg-ink-900/40">
-                    <th scope="row" className="px-4 py-3 font-medium text-fg">
-                      {lab.to ? (
-                        <Link
-                          to={lab.to}
-                          className="text-exec-200 underline decoration-exec-500/40 underline-offset-2 hover:decoration-exec-300"
-                        >
-                          {lab.name}
-                        </Link>
-                      ) : (
-                        lab.name
-                      )}
-                    </th>
-                    <td className="hidden px-4 py-3 text-fg-muted sm:table-cell">{lab.what}</td>
-                    <td className="px-4 py-3">
-                      {lab.to ? (
-                        <Badge tone="ok">Available</Badge>
-                      ) : (
-                        <Badge>In development · {lab.milestone}</Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section aria-labelledby="paths-overview" className="border-t border-ink-700 py-14">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="kicker">Curriculum</p>
-              <h2 id="paths-overview" className="mt-2 font-serif text-[30px] text-fg">
-                {LEARNING_PATHS.length} learning paths, from first principles to JIT internals
-              </h2>
-            </div>
-            <Link
-              to="/paths"
-              className="inline-flex items-center gap-1.5 text-[14px] text-exec-300 hover:text-exec-200"
-            >
-              All learning paths <ArrowRight size={15} aria-hidden />
-            </Link>
-          </div>
-          <ul className="mt-5 grid gap-x-8 gap-y-2 text-[14.5px] sm:grid-cols-2 lg:grid-cols-3">
-            {LEARNING_PATHS.map((path) => (
-              <li
-                key={path.id}
-                className="flex items-baseline gap-2 border-b border-ink-700/70 py-2"
+          <div className="max-w-2xl space-y-4 text-[17px] leading-relaxed text-fg-muted">
+            <p>
+              Simple explanations are short, never false. Every simplified picture says what it
+              leaves out, and every analogy says where it stops being true.
+            </p>
+            <p>
+              What the Java specification requires is always kept apart from how OpenJDK’s HotSpot
+              JVM happens to do it. Bytecode, logs and numbers come from running a real JDK (OpenJDK
+              25.0.4), never from memory.
+            </p>
+            <p>
+              Every claim cites its source.{' '}
+              <Link
+                to="/about"
+                className="text-exec-300 underline underline-offset-2 hover:text-exec-200"
               >
-                <span className="w-7 shrink-0 font-mono text-[12px] text-fg-subtle">
-                  {path.code}
-                </span>
-                <span className="flex-1 text-fg-muted">{path.title}</span>
-                <span className="font-mono text-[11px] text-fg-subtle">
-                  {path.route ? 'now' : path.milestone}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section aria-labelledby="accuracy" className="border-t border-ink-700 py-14">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-            <div>
-              <p className="kicker">Accuracy policy</p>
-              <h2 id="accuracy" className="mt-2 font-serif text-[30px] leading-tight text-fg">
-                Specification, implementation, simplification: always labelled.
-              </h2>
-            </div>
-            <ul className="space-y-3 text-[15px] text-fg-muted">
-              <li>
-                <span className="text-fg">Solid outlines</span> are concepts defined by the Java SE
-                25 JVM Specification. <span className="text-fg">Dashed</span> ones are OpenJDK
-                HotSpot JDK 25 structures that other JVMs may not have.
-              </li>
-              <li>
-                Every bytecode listing, flag default and log line was produced with OpenJDK 25.0.4,
-                not written from memory.
-              </li>
-              <li>
-                Every diagram and walkthrough states what it simplifies. Simulations are labelled as
-                educational models.
-              </li>
-              <li>
-                Every component cites primary sources: the specifications, JEPs and the OpenJDK
-                source at tag <code className="font-mono text-[0.9em] text-fg">jdk-25-ga</code>.{' '}
-                <Link to="/references" className="text-exec-300 underline underline-offset-2">
-                  See the references
-                </Link>
-                .
-              </li>
-            </ul>
+                Read the accuracy policy
+              </Link>{' '}
+              or{' '}
+              <Link
+                to="/references"
+                className="text-exec-300 underline underline-offset-2 hover:text-exec-200"
+              >
+                browse the references
+              </Link>
+              .
+            </p>
           </div>
         </section>
       </div>

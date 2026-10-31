@@ -1,7 +1,6 @@
 import { AccuracyNote } from '@/components/learning/AccuracyNote';
 import { KnowledgeCheck } from '@/components/learning/KnowledgeCheck';
 import { SourceList } from '@/components/learning/SourceReference';
-import { COMPONENT_LIST } from '@/content/jvm';
 import { ANATOMY_QUIZ } from '@/content/jvm/quiz';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { AnatomyExplorer } from '@/modules/jvm/AnatomyExplorer';
@@ -14,15 +13,15 @@ const PLATE_NOTES = [
 ];
 
 export function JvmAnatomyPage() {
-  usePageTitle('JVM Anatomy');
+  usePageTitle('Explore the JVM');
   return (
     <>
       <div className="border-b border-ink-700 bg-ink-950 px-4 py-2.5 sm:px-6">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <h1 className="font-serif text-[22px] text-fg">JVM Anatomy</h1>
-          <p className="text-[13px] text-fg-subtle">
-            Plate 01 · {COMPONENT_LIST.length} components · Specification: Java SE 25 ·
-            Implementation: OpenJDK HotSpot, JDK 25
+          <h1 className="font-serif text-[22px] text-fg">Explore the JVM</h1>
+          <p className="text-[13.5px] text-fg-subtle">
+            The machine that runs Java, part by part. Specification: Java SE 25 · Implementation:
+            OpenJDK HotSpot, JDK 25
           </p>
         </div>
       </div>

@@ -12,10 +12,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'The memory areas the JVM uses while running a program: some shared by all threads, some private to each thread.',
-    beginner:
+    simple:
       'While your program runs, the JVM keeps data in several places. Objects live in the shared **heap**. Information about classes lives in the shared **method area**. Each thread gets its own **stack** for method calls and its own **PC register** that remembers which instruction it is on.',
-    technical:
-      "JVMS §2.5 defines six logical areas. Created at JVM start-up and shared by all threads: the [[heap]] and the [[method-area|method area]] (with one [[runtime-constant-pool|run-time constant pool]] per class). Created with each thread and private to it: the [[pc-register|pc register]], the [[jvm-stack|JVM stack]] and the [[native-method-stack|native method stack]].\n\nThese are **logical** areas. HotSpot maps them onto its own structures: the Java heap managed by the selected GC; Metaspace (native memory) for class metadata; `java.lang.Class` mirrors and interned strings in the Java heap; one native thread stack holding both Java and native frames; and the interpreter's bytecode pointer as the pc.",
+    deep: "JVMS §2.5 defines six logical areas. Created at JVM start-up and shared by all threads: the [[heap]] and the [[method-area|method area]] (with one [[runtime-constant-pool|run-time constant pool]] per class). Created with each thread and private to it: the [[pc-register|pc register]], the [[jvm-stack|JVM stack]] and the [[native-method-stack|native method stack]].\n\nThese are **logical** areas. HotSpot maps them onto its own structures: the Java heap managed by the selected GC; Metaspace (native memory) for class metadata; `java.lang.Class` mirrors and interned strings in the Java heap; one native thread stack holding both Java and native frames; and the interpreter's bytecode pointer as the pc.",
     purpose:
       'Separate what all threads share (objects, classes) from what each thread owns (its position and call stack).',
     internals: [
@@ -55,10 +54,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-thread',
     summary:
       'Each thread owns a pc register, a JVM stack and a native method stack; all threads share the heap and method area.',
-    beginner:
+    simple:
       'A thread is one line of execution in your program. Every thread has its own private notebook (its stack and PC register), but all threads share the same heap. That sharing is what makes multithreading powerful, and what makes race conditions possible.',
-    technical:
-      "JVMS §2.5 ties the pc register, JVM stack and native method stack to each JVM thread, created and destroyed with it. In HotSpot each platform thread is a `JavaThread` backed 1:1 by an operating-system thread. [[virtual-thread|Virtual threads]] (JDK 21, JEP 444) are scheduled by the JDK onto a small pool of carrier platform threads; while unmounted, a virtual thread's frames are stored in heap objects (stack chunks) and copied back to a carrier's stack when it resumes.",
+    deep: "JVMS §2.5 ties the pc register, JVM stack and native method stack to each JVM thread, created and destroyed with it. In HotSpot each platform thread is a `JavaThread` backed 1:1 by an operating-system thread. [[virtual-thread|Virtual threads]] (JDK 21, JEP 444) are scheduled by the JDK onto a small pool of carrier platform threads; while unmounted, a virtual thread's frames are stored in heap objects (stack chunks) and copied back to a carrier's stack when it resumes.",
     purpose: 'Give each concurrent activity its own execution position and call stack.',
     internals: [
       'PC register',
@@ -91,10 +89,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-thread',
     summary:
       'Per-thread position of the instruction currently being executed; undefined for native methods.',
-    beginner:
+    simple:
       'A bookmark for each thread: it holds the position of the bytecode instruction the thread is executing, so the JVM always knows where to continue.',
-    technical:
-      'JVMS §2.5.1: each JVM thread has its own pc register. While executing a Java method it contains the address of the current JVM instruction; while executing a `native` method its value is undefined. It is wide enough for a `returnAddress` or a native pointer.\n\nHotSpot has no dedicated "pc register" structure. The template interpreter keeps a **bytecode pointer** (bcp) in a machine register (`r13` on x86-64) and saves it into the frame\'s bcp slot when it calls out. Compiled code uses the CPU\'s own program counter; debug information maps it back to a bytecode index for stack traces and deoptimization.',
+    deep: 'JVMS §2.5.1: each JVM thread has its own pc register. While executing a Java method it contains the address of the current JVM instruction; while executing a `native` method its value is undefined. It is wide enough for a `returnAddress` or a native pointer.\n\nHotSpot has no dedicated "pc register" structure. The template interpreter keeps a **bytecode pointer** (bcp) in a machine register (`r13` on x86-64) and saves it into the frame\'s bcp slot when it calls out. Compiled code uses the CPU\'s own program counter; debug information maps it back to a bytecode index for stack traces and deoptimization.',
     purpose:
       'Know where each thread is, so it can resume after a call returns or after the thread is rescheduled.',
     internals: [
@@ -143,10 +140,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-thread',
     summary:
       'Per-thread stack for native (C/C++) code called through JNI; in HotSpot it is the same stack as the Java frames.',
-    beginner:
+    simple:
       'When Java calls native code written in C or C++, that code needs a stack too. The native method stack holds those native calls.',
-    technical:
-      'JVMS §2.5.6 allows "conventional stacks, colloquially called C stacks" to support native methods, with the same `StackOverflowError` and `OutOfMemoryError` conditions as JVM stacks. An implementation that cannot load native methods need not provide them.\n\nHotSpot does not keep a separate structure: each thread has **one native stack** on which interpreted frames, compiled frames, JNI transition frames and C frames are interleaved. The "JVM stack" and the "native method stack" are two views of that one memory region.',
+    deep: 'JVMS §2.5.6 allows "conventional stacks, colloquially called C stacks" to support native methods, with the same `StackOverflowError` and `OutOfMemoryError` conditions as JVM stacks. An implementation that cannot load native methods need not provide them.\n\nHotSpot does not keep a separate structure: each thread has **one native stack** on which interpreted frames, compiled frames, JNI transition frames and C frames are interleaved. The "JVM stack" and the "native method stack" are two views of that one memory region.',
     purpose: 'Run native code with an ordinary C calling convention.',
     internals: [
       'C frames of native methods and JNI calls',
@@ -180,10 +176,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-thread',
     summary:
       'Per-thread stack of frames: one frame per active method call, pushed on call, popped on return.',
-    beginner:
+    simple:
       "Each thread's call history. When a method is called, a new **frame** is placed on top; when it returns, that frame is removed. The frame on top is the method running right now.",
-    technical:
-      "JVMS §2.5.2: each thread has a private JVM stack, created with the thread, that stores frames and is manipulated only by pushing and popping them. Its size may be fixed or dynamic. If a computation needs a deeper stack than permitted, the JVM throws `StackOverflowError`; if the stack cannot be created or expanded, `OutOfMemoryError`.\n\nHotSpot uses the thread's native stack (`-Xss`; `ThreadStackSize` defaults to 1024 KB on Linux x64). Protected guard zones at the end of the stack (reserved, yellow and red pages, plus a shadow zone checked on method entry) turn an overflow into a recoverable `StackOverflowError` instead of a crash.",
+    deep: "JVMS §2.5.2: each thread has a private JVM stack, created with the thread, that stores frames and is manipulated only by pushing and popping them. Its size may be fixed or dynamic. If a computation needs a deeper stack than permitted, the JVM throws `StackOverflowError`; if the stack cannot be created or expanded, `OutOfMemoryError`.\n\nHotSpot uses the thread's native stack (`-Xss`; `ThreadStackSize` defaults to 1024 KB on Linux x64). Protected guard zones at the end of the stack (reserved, yellow and red pages, plus a shadow zone checked on method entry) turn an overflow into a recoverable `StackOverflowError` instead of a crash.",
     purpose:
       'Track nested method calls and give each call private storage that disappears when it returns.',
     internals: [
@@ -248,10 +243,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-thread',
     summary:
       "Storage for one method invocation: local variables, operand stack and a link to the class's constant pool.",
-    beginner:
+    simple:
       "A frame is the workspace of one method call. It holds the method's local variables and a small scratch stack for calculations, and it remembers how to get back to the caller.",
-    technical:
-      "JVMS §2.6: a frame is created each time a method is invoked and destroyed when the invocation completes, normally or abruptly. It contains a [[local-variable-array|local variable array]], an [[operand-stack|operand stack]] and a reference to the run-time constant pool of the current method's class ([[dynamic-linking]]). Their sizes are fixed at compile time (`max_locals`, `max_stack` in the `Code` attribute: 3 and 3 for our `main`). Only one frame per thread is active: the current frame.\n\nHotSpot's interpreter frame on x86-64 additionally stores the sender's stack pointer, the `Method*`, the class mirror, the profiling pointer (mdp), the constant pool cache, the locals pointer, the bcp and a monitor block. Compiled frames look different again: values live in registers and one physical frame can represent several inlined methods.",
+    deep: "JVMS §2.6: a frame is created each time a method is invoked and destroyed when the invocation completes, normally or abruptly. It contains a [[local-variable-array|local variable array]], an [[operand-stack|operand stack]] and a reference to the run-time constant pool of the current method's class ([[dynamic-linking]]). Their sizes are fixed at compile time (`max_locals`, `max_stack` in the `Code` attribute: 3 and 3 for our `main`). Only one frame per thread is active: the current frame.\n\nHotSpot's interpreter frame on x86-64 additionally stores the sender's stack pointer, the `Method*`, the class mirror, the profiling pointer (mdp), the constant pool cache, the locals pointer, the bcp and a monitor block. Compiled frames look different again: values live in registers and one physical frame can represent several inlined methods.",
     purpose: "Isolate each invocation's state and make returning to the caller possible.",
     internals: [
       'Local variable array',
@@ -295,10 +289,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-thread',
     summary:
       "Indexed slots for a method's parameters and local variables; slot 0 is `this` in instance methods.",
-    beginner:
+    simple:
       'Numbered boxes where a method keeps its parameters and local variables. In `main`, box 0 holds `args`, box 1 holds `p1` and box 2 holds `p2`. A box can hold a number or a reference to an object, never the object itself.',
-    technical:
-      'JVMS §2.6.1: an array of variables indexed from 0, sized by `max_locals`. Each slot holds a `boolean`, `byte`, `char`, `short`, `int`, `float`, `reference` or `returnAddress`; `long` and `double` occupy two consecutive slots. For instance methods slot 0 holds `this`; parameters follow in order. Instructions such as `aload_1` and `astore_2` move values between locals and the operand stack. Local names exist only in the optional `LocalVariableTable` (`javac -g`).',
+    deep: 'JVMS §2.6.1: an array of variables indexed from 0, sized by `max_locals`. Each slot holds a `boolean`, `byte`, `char`, `short`, `int`, `float`, `reference` or `returnAddress`; `long` and `double` occupy two consecutive slots. For instance methods slot 0 holds `this`; parameters follow in order. Instructions such as `aload_1` and `astore_2` move values between locals and the operand stack. Local names exist only in the optional `LocalVariableTable` (`javac -g`).',
     purpose: "Fast, indexed storage for a method's parameters and temporaries.",
     internals: [
       'Slot 0: `this` (instance methods) or the first parameter',
@@ -338,10 +331,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-thread',
     summary:
       'A per-frame LIFO scratch stack: instructions pop their inputs from it and push their results.',
-    beginner:
+    simple:
       'The JVM is a stack machine. To compute something, it pushes values onto a small stack, and each instruction takes its inputs from the top and puts its result back on top.',
-    technical:
-      "JVMS §2.6.2: each frame has an operand stack whose maximum depth (`max_stack`) is fixed at compile time. It starts empty. Load and constant instructions push; arithmetic, field and invoke instructions pop operands and push results; invocations pop the arguments and the callee's return value is pushed onto the caller's stack. The verifier proves the stack's depth and types at every instruction.\n\nThe operand stack is a model: the template interpreter caches the top value in a register, and compiled code maps stack slots to registers, so no physical operand stack exists in JIT-compiled methods.",
+    deep: "JVMS §2.6.2: each frame has an operand stack whose maximum depth (`max_stack`) is fixed at compile time. It starts empty. Load and constant instructions push; arithmetic, field and invoke instructions pop operands and push results; invocations pop the arguments and the callee's return value is pushed onto the caller's stack. The verifier proves the stack's depth and types at every instruction.\n\nThe operand stack is a model: the template interpreter caches the top value in a register, and compiled code maps stack slots to registers, so no physical operand stack exists in JIT-compiled methods.",
     purpose:
       'A compact way to encode computations without naming registers, keeping bytecode small and portable.',
     internals: ['Entries typed like local variables', 'Maximum depth checked by the verifier'],
@@ -382,10 +374,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-thread',
     summary:
       'The rest of a frame: the link to the run-time constant pool and what is needed to return or unwind.',
-    beginner:
+    simple:
       "Besides variables and the scratch stack, each frame keeps some bookkeeping: which class's constant table to use, where to go back to when the method finishes, and how to handle exceptions.",
-    technical:
-      '"Frame data" is a teaching label, not a JVMS term. It groups what JVMS §2.6 requires beyond locals and the operand stack: the reference to the current class\'s run-time constant pool for [[dynamic-linking]] (§2.6.3), and the state needed to restore the invoker on normal completion (§2.6.4) or to unwind on abrupt completion (§2.6.5).\n\nIn HotSpot\'s x86-64 interpreter frames this includes the return address, saved frame pointer, sender stack pointer, `Method*`, class mirror, method-data pointer (mdp) for profiling, constant pool cache, locals pointer, saved bcp, and the monitor block used by `synchronized` methods.',
+    deep: '"Frame data" is a teaching label, not a JVMS term. It groups what JVMS §2.6 requires beyond locals and the operand stack: the reference to the current class\'s run-time constant pool for [[dynamic-linking]] (§2.6.3), and the state needed to restore the invoker on normal completion (§2.6.4) or to unwind on abrupt completion (§2.6.5).\n\nIn HotSpot\'s x86-64 interpreter frames this includes the return address, saved frame pointer, sender stack pointer, `Method*`, class mirror, method-data pointer (mdp) for profiling, constant pool cache, locals pointer, saved bcp, and the monitor block used by `synchronized` methods.',
     purpose:
       'Let the frame resolve symbols, return to its caller and participate in exception handling.',
     internals: [
@@ -423,10 +414,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Shared per-class data: run-time constant pools, field and method data, and method code.',
-    beginner:
+    simple:
       "The place where the JVM keeps what it knows about each class: its methods' bytecode, its fields, and its constant table. There is one copy per class, shared by every object and every thread.",
-    technical:
-      'JVMS §2.5.4: created at start-up, shared by all threads, it stores per-class structures — the run-time constant pool, field and method data, and the code for methods and constructors. The specification calls it "logically part of the heap" but does not mandate its location, garbage collection or compaction. If it cannot satisfy an allocation the JVM throws `OutOfMemoryError`.\n\nHotSpot (since JDK 8, JEP 122) stores class metadata — `InstanceKlass`, `Method`, `ConstMethod` (bytecode), `ConstantPool` — in [[metaspace|**Metaspace**]], native memory outside the Java heap. The `java.lang.Class` mirror (which holds static fields) and interned strings live in the Java heap; JIT-compiled code lives in the code cache.',
+    deep: 'JVMS §2.5.4: created at start-up, shared by all threads, it stores per-class structures — the run-time constant pool, field and method data, and the code for methods and constructors. The specification calls it "logically part of the heap" but does not mandate its location, garbage collection or compaction. If it cannot satisfy an allocation the JVM throws `OutOfMemoryError`.\n\nHotSpot (since JDK 8, JEP 122) stores class metadata — `InstanceKlass`, `Method`, `ConstMethod` (bytecode), `ConstantPool` — in [[metaspace|**Metaspace**]], native memory outside the Java heap. The `java.lang.Class` mirror (which holds static fields) and interned strings live in the Java heap; JIT-compiled code lives in the code cache.',
     purpose: "Hold each class's shared definition exactly once.",
     internals: [
       'Per-class metadata (HotSpot: `InstanceKlass`, vtable/itable)',
@@ -482,10 +472,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'per-class',
     summary:
       'Per-class table of constants and symbolic references, resolved lazily to direct references.',
-    beginner:
+    simple:
       'Each class has a table of the names and constants its code uses: other classes, methods, fields, and literal values like `"Alex"`. Instructions point into this table by number. The first time an entry is used, the JVM looks up what it really refers to and remembers the answer.',
-    technical:
-      'JVMS §2.5.5 and §5.1: the run-time representation of a class file\'s `constant_pool` table, created when the class is created. It holds numeric and string constants and symbolic references to classes, fields, methods, method handles, method types and dynamically-computed constants or call sites. [[resolution|Resolution]] turns symbolic references into direct ones.\n\nIn HotSpot it is a `ConstantPool` in Metaspace plus a constant pool cache (`ResolvedFieldEntry`, `ResolvedMethodEntry`, `ResolvedIndyEntry` arrays) recording resolution results, and a heap array of resolved objects such as the `String` for `"Alex"`.',
+    deep: 'JVMS §2.5.5 and §5.1: the run-time representation of a class file\'s `constant_pool` table, created when the class is created. It holds numeric and string constants and symbolic references to classes, fields, methods, method handles, method types and dynamically-computed constants or call sites. [[resolution|Resolution]] turns symbolic references into direct ones.\n\nIn HotSpot it is a `ConstantPool` in Metaspace plus a constant pool cache (`ResolvedFieldEntry`, `ResolvedMethodEntry`, `ResolvedIndyEntry` arrays) recording resolution results, and a heap array of resolved objects such as the `String` for `"Alex"`.',
     purpose:
       'Keep bytecode compact and allow late binding: code names things; the JVM resolves them at run time.',
     internals: [
@@ -538,10 +527,9 @@ export const runtimeDataComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Shared memory for all class instances and arrays, reclaimed automatically by the garbage collector.',
-    beginner:
+    simple:
       'The big shared memory area where objects live. `new Person("Alex")` creates a Person in the heap; variables only hold references to it. You never free heap memory yourself: the garbage collector reclaims objects nothing refers to any more.',
-    technical:
-      'JVMS §2.5.3: created at start-up and shared among all threads; the area from which memory for all class instances and arrays is allocated. Storage is reclaimed by automatic storage management; objects are never explicitly deallocated. Size may be fixed or expandable; if more heap is needed than can be provided, the JVM throws `OutOfMemoryError`.\n\nHotSpot JDK 25 on a server-class machine uses G1 by default: the heap is split into equal-sized regions (2 MB in our measured run) that serve as eden, survivor, old or humongous regions. Threads allocate by bumping a pointer inside a private [[tlab|TLAB]]. By default an object has a 12-byte header (8-byte mark word + 4-byte compressed class pointer) and references are 32-bit [[compressed-oops|compressed oops]] — so a reference is **not** a raw memory address.',
+    deep: 'JVMS §2.5.3: created at start-up and shared among all threads; the area from which memory for all class instances and arrays is allocated. Storage is reclaimed by automatic storage management; objects are never explicitly deallocated. Size may be fixed or expandable; if more heap is needed than can be provided, the JVM throws `OutOfMemoryError`.\n\nHotSpot JDK 25 on a server-class machine uses G1 by default: the heap is split into equal-sized regions (2 MB in our measured run) that serve as eden, survivor, old or humongous regions. Threads allocate by bumping a pointer inside a private [[tlab|TLAB]]. By default an object has a 12-byte header (8-byte mark word + 4-byte compressed class pointer) and references are 32-bit [[compressed-oops|compressed oops]] — so a reference is **not** a raw memory address.',
     purpose:
       'Give objects a lifetime independent of the method that created them, shared safely across threads.',
     internals: [
@@ -607,10 +595,9 @@ with -XX:+UseCompactObjectHeaders = 8 and 12 (JEP 519: 8-byte header)`,
     provenance: 'hotspot',
     scope: 'shared',
     summary: 'Where new objects start: eden plus survivor space, collected often and cheaply.',
-    beginner:
+    simple:
       'Most objects die young: a temporary string, a loop iterator. The JVM puts new objects in a "young" area and cleans it often. Cleaning is cheap because only the few survivors need to be kept.',
-    technical:
-      "Generational collection exploits the weak generational hypothesis. In G1 the young generation is a set of (not necessarily contiguous) eden and survivor regions whose total size the collector adapts to meet its pause-time goal. A young collection is a stop-the-world evacuation pause that copies live young objects into survivor or old regions; its cost depends on the amount of **live** data, not on garbage. Serial and Parallel GC use a contiguous young generation (eden plus two survivor spaces); ZGC is generational since JDK 21 and only generational since JDK 24; Shenandoah's generational mode is a product feature in JDK 25 but not the default.",
+    deep: "Generational collection exploits the weak generational hypothesis. In G1 the young generation is a set of (not necessarily contiguous) eden and survivor regions whose total size the collector adapts to meet its pause-time goal. A young collection is a stop-the-world evacuation pause that copies live young objects into survivor or old regions; its cost depends on the amount of **live** data, not on garbage. Serial and Parallel GC use a contiguous young generation (eden plus two survivor spaces); ZGC is generational since JDK 21 and only generational since JDK 24; Shenandoah's generational mode is a product feature in JDK 25 but not the default.",
     purpose: 'Reclaim short-lived objects quickly without scanning the whole heap.',
     internals: [
       'Eden regions',
@@ -648,10 +635,9 @@ with -XX:+UseCompactObjectHeaders = 8 and 12 (JEP 519: 8-byte header)`,
     provenance: 'hotspot',
     scope: 'shared',
     summary: 'Where almost all new objects are allocated, inside per-thread TLABs.',
-    beginner:
+    simple:
       'The nursery: brand-new objects are created here. When eden fills up, a quick garbage collection moves the survivors out and the whole of eden becomes free again.',
-    technical:
-      'Each thread receives a [[tlab|thread-local allocation buffer]] carved from eden and allocates by bumping a pointer, without locks. When eden is exhausted, the collector schedules a young collection. In G1, live objects are evacuated (copied) from eden regions to survivor or old regions; afterwards the eden regions are empty and reused. Large objects (at least half a region in G1) bypass eden as [[humongous-object|humongous]] allocations.',
+    deep: 'Each thread receives a [[tlab|thread-local allocation buffer]] carved from eden and allocates by bumping a pointer, without locks. When eden is exhausted, the collector schedules a young collection. In G1, live objects are evacuated (copied) from eden regions to survivor or old regions; afterwards the eden regions are empty and reused. Large objects (at least half a region in G1) bypass eden as [[humongous-object|humongous]] allocations.',
     purpose: 'Make allocation almost as cheap as incrementing a pointer.',
     internals: ['TLABs per thread', 'Bump-pointer allocation'],
     inputs: ['`new` and array allocations'],
@@ -686,10 +672,9 @@ with -XX:+UseCompactObjectHeaders = 8 and 12 (JEP 519: 8-byte header)`,
     provenance: 'hotspot',
     scope: 'shared',
     summary: 'Holds objects that survived a young collection while they age.',
-    beginner:
+    simple:
       'Objects that survive a cleanup of eden move here. Each time they survive another cleanup they get a bit older; old enough objects move on to the old generation.',
-    technical:
-      'Each young collection copies live objects from eden and the current survivor space into new survivor space, incrementing their age (kept in 4 bits of the mark word, so at most 15). Objects whose age reaches the tenuring threshold (`MaxTenuringThreshold`, 15 by default, adjusted dynamically) or that do not fit are promoted to the old generation. Serial and Parallel GC alternate between two survivor spaces ("from" and "to"); G1 uses survivor regions.',
+    deep: 'Each young collection copies live objects from eden and the current survivor space into new survivor space, incrementing their age (kept in 4 bits of the mark word, so at most 15). Objects whose age reaches the tenuring threshold (`MaxTenuringThreshold`, 15 by default, adjusted dynamically) or that do not fit are promoted to the old generation. Serial and Parallel GC alternate between two survivor spaces ("from" and "to"); G1 uses survivor regions.',
     purpose:
       'Give medium-lived objects a chance to die before they are promoted to the expensive old generation.',
     internals: ['Object age in the mark word', 'Tenuring threshold'],
@@ -716,10 +701,9 @@ with -XX:+UseCompactObjectHeaders = 8 and 12 (JEP 519: 8-byte header)`,
     provenance: 'hotspot',
     scope: 'shared',
     summary: 'Long-lived objects promoted from the young generation, collected less often.',
-    beginner:
+    simple:
       'Objects that live a long time, such as caches, configuration and long-running sessions, end up here. This area is cleaned less often because its objects rarely become garbage.',
-    technical:
-      'Objects reach the old generation by promotion (aging out of survivor space) or, in G1, by direct [[humongous-object|humongous]] allocation. G1 collects old regions incrementally: when heap occupancy crosses the initiating threshold it starts a concurrent marking cycle, then performs *mixed* collections that evacuate young regions plus the old regions with the most garbage. A full GC (parallel mark-compact in G1) is the fallback when concurrent collection cannot keep up.',
+    deep: 'Objects reach the old generation by promotion (aging out of survivor space) or, in G1, by direct [[humongous-object|humongous]] allocation. G1 collects old regions incrementally: when heap occupancy crosses the initiating threshold it starts a concurrent marking cycle, then performs *mixed* collections that evacuate young regions plus the old regions with the most garbage. A full GC (parallel mark-compact in G1) is the fallback when concurrent collection cannot keep up.',
     purpose: 'Avoid repeatedly copying objects that are going to live a long time.',
     internals: [
       'Old regions',

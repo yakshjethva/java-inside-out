@@ -1,8 +1,9 @@
 import { Settings2 } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Popover } from '@/components/learning/Popover';
+import { LevelSwitch } from '@/components/learning/LevelSwitch';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { progressActions, usePreferences } from '@/hooks/useLearningState';
+import { levelLabel, progressActions, usePreferences } from '@/hooks/useLearningState';
 
 /** Learning preferences: explanation level and motion. Stored only in this browser. */
 export function SettingsMenu() {
@@ -22,9 +23,7 @@ export function SettingsMenu() {
         className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[13px] text-fg-muted hover:bg-ink-750 hover:text-fg"
       >
         <Settings2 size={16} aria-hidden />
-        <span className="hidden sm:inline">
-          {preferences.level === 'beginner' ? 'Beginner' : 'Technical'}
-        </span>
+        <span className="hidden sm:inline">{levelLabel(preferences.level)}</span>
         <span className="sr-only sm:hidden">Learning preferences</span>
       </button>
       <Popover
@@ -39,24 +38,12 @@ export function SettingsMenu() {
             Learning preferences
           </h2>
           <div>
-            <p className="mb-1.5 text-[13px] text-fg-muted">Explanation level</p>
-            <SegmentedControl
-              label="Explanation level"
-              value={preferences.level}
-              onChange={setLevel}
-              segments={[
-                {
-                  value: 'beginner',
-                  label: 'Beginner',
-                  description: 'Plain language, no JVM knowledge assumed',
-                },
-                {
-                  value: 'technical',
-                  label: 'Technical',
-                  description: 'Exact terminology and implementation detail',
-                },
-              ]}
-            />
+            <p className="mb-1.5 text-[13px] text-fg-muted">How deep should explanations go?</p>
+            <LevelSwitch value={preferences.level} onChange={setLevel} size="md" />
+            <p className="mt-1.5 text-[12.5px] text-fg-subtle">
+              Every explanation describes the same machine; deeper levels add code, specification
+              sections and HotSpot details.
+            </p>
           </div>
           <div>
             <p className="mb-1.5 text-[13px] text-fg-muted">Motion</p>

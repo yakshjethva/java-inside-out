@@ -12,10 +12,9 @@ export const executionComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'Turns bytecode into work on the CPU: an interpreter first, then JIT-compiled machine code for hot code.',
-    beginner:
+    simple:
       'The part of the JVM that actually runs your code. It starts by interpreting bytecode one instruction at a time. Code that runs often is compiled to native machine code while the program runs, so it gets much faster.',
-    technical:
-      'The JVM Specification defines what each instruction does, not how to execute it, and explicitly allows translating bytecode to native code at load time or during execution (JVMS §2.13). HotSpot\'s engine is "mixed mode": a template [[interpreter]], [[tiered-compilation|tiered]] JIT compilation with C1 and C2, a [[code-cache]] for compiled code, runtime profiling that steers the compilers, and [[deoptimization]] to fall back when speculative assumptions break.',
+    deep: 'The JVM Specification defines what each instruction does, not how to execute it, and explicitly allows translating bytecode to native code at load time or during execution (JVMS §2.13). HotSpot\'s engine is "mixed mode": a template [[interpreter]], [[tiered-compilation|tiered]] JIT compilation with C1 and C2, a [[code-cache]] for compiled code, runtime profiling that steers the compilers, and [[deoptimization]] to fall back when speculative assumptions break.',
     purpose:
       'Start running immediately, then make the hot parts fast, without giving up correctness.',
     internals: [
@@ -70,10 +69,9 @@ OpenJDK 64-Bit Server VM (build 25.0.4.1+1-1-24.04.4-Ubuntu, mixed mode, sharing
     scope: 'shared',
     summary:
       'Executes bytecode instruction by instruction; in HotSpot each bytecode is a pre-generated machine-code template.',
-    beginner:
+    simple:
       'The interpreter reads one bytecode instruction, does what it says, then moves to the next. It can start immediately, without waiting for any compilation.',
-    technical:
-      "JVMS §2.11 describes the conceptual loop: fetch an opcode, fetch its operands, execute the action, repeat. HotSpot's **template interpreter** is not a `switch` loop in C++: at VM start-up it generates a small machine-code template for every bytecode (`TemplateTable`) and dispatches from one to the next through a table indexed by opcode. It keeps the bytecode pointer, locals pointer and top-of-stack value in registers, increments invocation and back-edge counters, records profiles, and polls for safepoints at returns and loop back-edges. The generated interpreter lives in the code cache.",
+    deep: "JVMS §2.11 describes the conceptual loop: fetch an opcode, fetch its operands, execute the action, repeat. HotSpot's **template interpreter** is not a `switch` loop in C++: at VM start-up it generates a small machine-code template for every bytecode (`TemplateTable`) and dispatches from one to the next through a table indexed by opcode. It keeps the bytecode pointer, locals pointer and top-of-stack value in registers, increments invocation and back-edge counters, records profiles, and polls for safepoints at returns and loop back-edges. The generated interpreter lives in the code cache.",
     purpose: 'Run code with zero compilation delay and collect the information the JIT needs.',
     internals: [
       'Dispatch table indexed by opcode',
@@ -121,10 +119,9 @@ OpenJDK 64-Bit Server VM (build 25.0.4.1+1-1-24.04.4-Ubuntu, mixed mode, sharing
     scope: 'shared',
     summary:
       'Counts invocations and loop iterations and records types and branches, so the JIT knows what is hot and how it behaves.',
-    beginner:
+    simple:
       'While code runs, the JVM keeps statistics: how often each method is called, how often loops repeat, which way `if` statements usually go, and what types of objects show up. These statistics decide what gets compiled and how.',
-    technical:
-      'Each method has counters (`MethodCounters`) for invocations and loop back-edges. Detailed profiles live in a per-method `MethodData` object (MDO): receiver types seen at virtual call sites, branch taken / not-taken counts, null seen, type-check outcomes. Tiered compilation collects them in the interpreter and, mainly, in tier-3 C1 code with full profiling. C2 uses them to speculate: inline the one receiver type seen, compile only the branches taken, omit null checks never needed. JDK 25 can also store profiles from a training run in an AOT cache (JEP 515), so a new process starts with them.',
+    deep: 'Each method has counters (`MethodCounters`) for invocations and loop back-edges. Detailed profiles live in a per-method `MethodData` object (MDO): receiver types seen at virtual call sites, branch taken / not-taken counts, null seen, type-check outcomes. Tiered compilation collects them in the interpreter and, mainly, in tier-3 C1 code with full profiling. C2 uses them to speculate: inline the one receiver type seen, compile only the branches taken, omit null checks never needed. JDK 25 can also store profiles from a training run in an AOT cache (JEP 515), so a new process starts with them.',
     purpose: 'Compile what matters and optimize it for how the program actually behaves.',
     internals: [
       'Invocation and back-edge counters',
@@ -158,10 +155,9 @@ OpenJDK 64-Bit Server VM (build 25.0.4.1+1-1-24.04.4-Ubuntu, mixed mode, sharing
     scope: 'shared',
     summary:
       'Compiles hot methods to native machine code while the program runs, guided by profiles.',
-    beginner:
+    simple:
       'The just-in-time compiler watches for code that runs a lot and translates it into native machine code for your CPU while the program is running. From then on, that code runs much faster than in the interpreter.',
-    technical:
-      'HotSpot uses tiered compilation (`compilationPolicy.hpp`): level 0 interpreter; 1 C1 without profiling; 2 C1 with invocation and back-edge counters; 3 C1 with full profiling; 4 C2. The common path is 0 → 3 → 4; trivial methods go to level 1; when the C2 queue is long, methods may take 0 → 2 → 3 → 4. Transitions are governed by thresholds such as `Tier3InvocationThreshold` (200) and `Tier4InvocationThreshold` (5000), scaled by compiler-queue load. Compilation runs in background compiler threads (3 in our measured run on 4 CPUs) while the application keeps executing.\n\nOpenJDK 25 builds ship C1 and C2; GraalVM distributions can plug in the Graal compiler instead through JVMCI.',
+    deep: 'HotSpot uses tiered compilation (`compilationPolicy.hpp`): level 0 interpreter; 1 C1 without profiling; 2 C1 with invocation and back-edge counters; 3 C1 with full profiling; 4 C2. The common path is 0 → 3 → 4; trivial methods go to level 1; when the C2 queue is long, methods may take 0 → 2 → 3 → 4. Transitions are governed by thresholds such as `Tier3InvocationThreshold` (200) and `Tier4InvocationThreshold` (5000), scaled by compiler-queue load. Compilation runs in background compiler threads (3 in our measured run on 4 CPUs) while the application keeps executing.\n\nOpenJDK 25 builds ship C1 and C2; GraalVM distributions can plug in the Graal compiler instead through JVMCI.',
     purpose:
       'Get native-code speed for the small fraction of code where the program spends its time.',
     internals: [
@@ -215,10 +211,9 @@ OpenJDK 64-Bit Server VM (build 25.0.4.1+1-1-24.04.4-Ubuntu, mixed mode, sharing
     scope: 'shared',
     summary:
       "Turns a method's bytecode into an installed nmethod; on-stack replacement compiles running loops.",
-    beginner:
+    simple:
       'When a method becomes hot, the JVM puts a request in a queue. A compiler thread picks it up, translates the bytecode into machine code, and installs it. Meanwhile the program keeps running in the interpreter, so nobody waits.',
-    technical:
-      'The compile broker queues a `CompileTask` per method and tier. A compiler thread parses bytecode into an intermediate representation (C1: HIR then LIR; C2: the sea-of-nodes "ideal graph"), optimizes it, allocates registers, and emits machine code plus metadata: oop maps (where references are, for the GC), debug information (to rebuild interpreter frames on deoptimization) and dependencies (assumptions to invalidate if, for example, a new subclass is loaded). The result is installed as an `nmethod` in the code cache. **On-stack replacement** (OSR, the `%` in `PrintCompilation`) compiles a long-running loop and moves the executing interpreter frame into compiled code mid-method.',
+    deep: 'The compile broker queues a `CompileTask` per method and tier. A compiler thread parses bytecode into an intermediate representation (C1: HIR then LIR; C2: the sea-of-nodes "ideal graph"), optimizes it, allocates registers, and emits machine code plus metadata: oop maps (where references are, for the GC), debug information (to rebuild interpreter frames on deoptimization) and dependencies (assumptions to invalidate if, for example, a new subclass is loaded). The result is installed as an `nmethod` in the code cache. **On-stack replacement** (OSR, the `%` in `PrintCompilation`) compiles a long-running loop and moves the executing interpreter frame into compiled code mid-method.',
     purpose:
       'Produce correct machine code asynchronously, with enough metadata to undo optimizations safely.',
     internals: [
@@ -255,10 +250,9 @@ OpenJDK 64-Bit Server VM (build 25.0.4.1+1-1-24.04.4-Ubuntu, mixed mode, sharing
     scope: 'shared',
     summary:
       'Profile-guided transformations: inlining, escape analysis, loop optimizations, intrinsics, speculation.',
-    beginner:
+    simple:
       'Before generating machine code, the compiler improves the program: it copies small methods into their callers, removes work whose result is never used, and avoids creating objects that never leave a method.',
-    technical:
-      'Key HotSpot optimizations: **inlining** (methods up to `MaxInlineSize` = 35 bytes of bytecode at cold sites, up to `FreqInlineSize` = 325 at hot sites), enabled across virtual calls by class hierarchy analysis and type profiles; **[[escape-analysis|escape analysis]]** in C2 with scalar replacement (`EliminateAllocations`) and lock elision; loop unrolling, range-check elimination and auto-vectorization; intrinsics (hand-written machine code for methods such as `System.arraycopy`); implicit null checks that rely on hardware traps; constant folding and dead-code elimination. Many are **speculative**: they hold only while profile-derived assumptions hold, with [[deoptimization]] as the safety net.',
+    deep: 'Key HotSpot optimizations: **inlining** (methods up to `MaxInlineSize` = 35 bytes of bytecode at cold sites, up to `FreqInlineSize` = 325 at hot sites), enabled across virtual calls by class hierarchy analysis and type profiles; **[[escape-analysis|escape analysis]]** in C2 with scalar replacement (`EliminateAllocations`) and lock elision; loop unrolling, range-check elimination and auto-vectorization; intrinsics (hand-written machine code for methods such as `System.arraycopy`); implicit null checks that rely on hardware traps; constant folding and dead-code elimination. Many are **speculative**: they hold only while profile-derived assumptions hold, with [[deoptimization]] as the safety net.',
     purpose: 'Remove abstraction cost so idiomatic Java runs close to hand-written native code.',
     internals: [
       'Inlining and devirtualization',
@@ -291,10 +285,9 @@ OpenJDK 64-Bit Server VM (build 25.0.4.1+1-1-24.04.4-Ubuntu, mixed mode, sharing
     scope: 'shared',
     summary:
       'Fast, moderately optimizing compiler used for tiers 1–3; tier 3 code collects full profiles.',
-    beginner:
+    simple:
       'The quick compiler. It produces decent machine code fast, so hot methods leave the interpreter early.',
-    technical:
-      'C1 (historically the "client" compiler) builds a high-level IR in SSA form, applies inlining, constant folding, value numbering and null-check elimination, lowers to LIR, and uses linear-scan register allocation. Tier 3 C1 code is instrumented to fill the method\'s MDO with profiles for C2; tier 2 records only counters; tier 1 has no profiling and is final for trivial methods.',
+    deep: 'C1 (historically the "client" compiler) builds a high-level IR in SSA form, applies inlining, constant folding, value numbering and null-check elimination, lowers to LIR, and uses linear-scan register allocation. Tier 3 C1 code is instrumented to fill the method\'s MDO with profiles for C2; tier 2 records only counters; tier 1 has no profiling and is final for trivial methods.',
     purpose: 'Short compile times and early speed-up, plus the profiling that feeds C2.',
     internals: [
       'HIR / LIR',
@@ -324,10 +317,9 @@ OpenJDK 64-Bit Server VM (build 25.0.4.1+1-1-24.04.4-Ubuntu, mixed mode, sharing
     provenance: 'hotspot',
     scope: 'shared',
     summary: 'Aggressive, profile-guided optimizing compiler used for tier 4.',
-    beginner:
+    simple:
       'The thorough compiler. It takes longer, but it produces the fastest machine code for the hottest methods.',
-    technical:
-      'C2 (the "server" or "opto" compiler) parses bytecode into a sea-of-nodes graph, performs global optimizations — aggressive inlining, escape analysis, loop transformations, auto-vectorization, global code motion — and allocates registers with graph colouring. It speculates heavily on profile data and plants uncommon traps where assumptions might fail. C2 compilations are more expensive in CPU and memory than C1\'s.',
+    deep: 'C2 (the "server" or "opto" compiler) parses bytecode into a sea-of-nodes graph, performs global optimizations — aggressive inlining, escape analysis, loop transformations, auto-vectorization, global code motion — and allocates registers with graph colouring. It speculates heavily on profile data and plants uncommon traps where assumptions might fail. C2 compilations are more expensive in CPU and memory than C1\'s.',
     purpose: 'Peak performance for the code that dominates execution time.',
     internals: [
       'Ideal graph (sea of nodes)',
@@ -359,10 +351,9 @@ OpenJDK 64-Bit Server VM (build 25.0.4.1+1-1-24.04.4-Ubuntu, mixed mode, sharing
     scope: 'shared',
     summary:
       'Native memory holding generated machine code: the interpreter, stubs and JIT-compiled methods.',
-    beginner:
+    simple:
       'The place where the JVM stores machine code it generated: the interpreter itself and every compiled method. The CPU executes code directly from here.',
-    technical:
-      'A reserved native memory region (`ReservedCodeCacheSize`, 240 MB with tiered compilation). Since JDK 9 it is segmented (JEP 197) into **non-nmethods** (interpreter, adapters, runtime stubs), **profiled nmethods** (tier 2–3 C1 code) and **non-profiled nmethods** (tier 1 C1 and tier 4 C2 code), which reduces fragmentation and speeds up scanning. When it fills up, HotSpot stops compiling ("CodeCache is full. Compiler has been disabled.") and performance degrades. Since JDK 20 there is no separate sweeper thread; unused compiled code is unloaded with GC-driven unloading.',
+    deep: 'A reserved native memory region (`ReservedCodeCacheSize`, 240 MB with tiered compilation). Since JDK 9 it is segmented (JEP 197) into **non-nmethods** (interpreter, adapters, runtime stubs), **profiled nmethods** (tier 2–3 C1 code) and **non-profiled nmethods** (tier 1 C1 and tier 4 C2 code), which reduces fragmentation and speeds up scanning. When it fills up, HotSpot stops compiling ("CodeCache is full. Compiler has been disabled.") and performance degrades. Since JDK 20 there is no separate sweeper thread; unused compiled code is unloaded with GC-driven unloading.',
     purpose: 'Executable memory for generated code, organized by code lifetime.',
     internals: ['Non-nmethod segment', 'Profiled nmethod segment', 'Non-profiled nmethod segment'],
     inputs: ['Installed nmethods, generated stubs'],
@@ -398,10 +389,9 @@ CodeHeap 'non-nmethods': size=5700Kb used=1265Kb max_used=1279Kb free=4434Kb
     scope: 'shared',
     summary:
       'Abandons compiled code whose assumptions no longer hold and resumes in the interpreter.',
-    beginner:
+    simple:
       'The JIT makes bets, such as "this variable is never null" or "only one class implements this interface". When a bet turns out wrong, the JVM safely switches that code back to the interpreter and may compile it again later with better information.',
-    technical:
-      'Optimized code contains **uncommon traps**: checks for situations the profile said never happen. When one is hit — an unexpected class (`Reason_class_check`), an unexpected null (`Reason_null_check`), a class not yet loaded or initialized (`Reason_unloaded`, `Reason_uninitialized`) — or when a dependency is invalidated (for example loading a new subclass breaks a class-hierarchy assumption), the runtime uses the nmethod\'s debug information to rebuild equivalent interpreter frames, including frames for inlined methods, and continues in the interpreter. The nmethod is marked "not entrant" so new calls stop using it, and the method can be recompiled with updated profiles.',
+    deep: 'Optimized code contains **uncommon traps**: checks for situations the profile said never happen. When one is hit — an unexpected class (`Reason_class_check`), an unexpected null (`Reason_null_check`), a class not yet loaded or initialized (`Reason_unloaded`, `Reason_uninitialized`) — or when a dependency is invalidated (for example loading a new subclass breaks a class-hierarchy assumption), the runtime uses the nmethod\'s debug information to rebuild equivalent interpreter frames, including frames for inlined methods, and continues in the interpreter. The nmethod is marked "not entrant" so new calls stop using it, and the method can be recompiled with updated profiles.',
     purpose: 'Make aggressive speculation safe, so the compiler can optimize for the common case.',
     internals: [
       'Uncommon traps',

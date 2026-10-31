@@ -6,6 +6,7 @@ import { nativePlatformComponents } from './components/nativePlatform';
 import { processComponents } from './components/process';
 import { runtimeDataComponents } from './components/runtimeData';
 import { COMPONENT_IDS, type ComponentId } from './ids';
+import { TEACHING } from './teaching';
 
 const ALL: ComponentDoc[] = [
   ...processComponents,
@@ -14,7 +15,7 @@ const ALL: ComponentDoc[] = [
   ...executionComponents,
   ...gcComponents,
   ...nativePlatformComponents,
-];
+].map((doc) => ({ ...doc, ...TEACHING[doc.id] }));
 
 export const COMPONENTS = Object.fromEntries(ALL.map((doc) => [doc.id, doc])) as Record<
   ComponentId,

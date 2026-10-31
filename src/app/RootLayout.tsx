@@ -39,7 +39,7 @@ export function RootLayout() {
       <SiteHeader />
       <div
         aria-hidden
-        className={`fixed top-0 left-0 z-50 h-0.5 bg-exec-400 transition-all duration-500 ${navigation.state === 'loading' ? 'w-2/3 opacity-100' : 'w-full opacity-0'}`}
+        className={`fixed top-0 left-0 z-50 h-0.5 w-full origin-left bg-exec-400 transition-[scale,opacity] duration-500 ${navigation.state === 'loading' ? 'scale-x-[0.66] opacity-100' : 'scale-x-100 opacity-0'}`}
       />
       <main id="main" ref={mainRef} tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <Outlet />

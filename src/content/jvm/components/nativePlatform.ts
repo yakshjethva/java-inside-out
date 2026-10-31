@@ -12,10 +12,9 @@ export const nativePlatformComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'The boundary between Java and native code: JNI, and since JDK 22 the Foreign Function & Memory API.',
-    beginner:
+    simple:
       'Java code sometimes needs to call code written in C or C++, and native programs sometimes need to start or call into Java. The native interface defines how the two sides talk.',
-    technical:
-      'The Java Native Interface (JNI) specification defines how `native` methods are implemented in C/C++, how native code calls back into the JVM through `JNIEnv`, and the Invocation API used to create a JVM (as the `java` launcher does). JVMS §5.6 covers binding native method implementations. The [[ffm-api|Foreign Function & Memory API]] (`java.lang.foreign`, final in JDK 22, JEP 454) is the modern alternative: native functions are described and called from Java code, without hand-written C glue.',
+    deep: 'The Java Native Interface (JNI) specification defines how `native` methods are implemented in C/C++, how native code calls back into the JVM through `JNIEnv`, and the Invocation API used to create a JVM (as the `java` launcher does). JVMS §5.6 covers binding native method implementations. The [[ffm-api|Foreign Function & Memory API]] (`java.lang.foreign`, final in JDK 22, JEP 454) is the modern alternative: native functions are described and called from Java code, without hand-written C glue.',
     purpose: 'Reach operating-system services, hardware and existing native libraries.',
     internals: [
       'JNI: native methods, JNIEnv, references, Invocation API',
@@ -49,10 +48,9 @@ export const nativePlatformComponents: ComponentDoc[] = [
     scope: 'shared',
     summary:
       'The contract for native methods: symbol naming, the JNIEnv function table, local and global references.',
-    beginner:
+    simple:
       'JNI is the set of rules that lets C or C++ code implement a Java method, and lets that native code safely read Java objects, create strings or call Java methods back.',
-    technical:
-      'A `native` method is bound to a C function either by name (`Java_<class>_<method>`, mangled) or through `RegisterNatives` in `JNI_OnLoad`. The function receives a [[jnienv|`JNIEnv*`]] — a per-thread pointer to a table of JNI functions — plus `jclass`/`jobject` and the arguments. Object references handed to native code are **local references**, valid until the native method returns; `NewGlobalRef` creates **global references** that stay valid (and keep the object alive as a GC root) until deleted. While a thread runs native code it is in the "in native" state, so safepoints and garbage collection can proceed without waiting for it. Pending Java exceptions must be checked (`ExceptionCheck`) by the native code.',
+    deep: 'A `native` method is bound to a C function either by name (`Java_<class>_<method>`, mangled) or through `RegisterNatives` in `JNI_OnLoad`. The function receives a [[jnienv|`JNIEnv*`]] — a per-thread pointer to a table of JNI functions — plus `jclass`/`jobject` and the arguments. Object references handed to native code are **local references**, valid until the native method returns; `NewGlobalRef` creates **global references** that stay valid (and keep the object alive as a GC root) until deleted. While a thread runs native code it is in the "in native" state, so safepoints and garbage collection can proceed without waiting for it. Pending Java exceptions must be checked (`ExceptionCheck`) by the native code.',
     purpose: 'A stable, VM-independent binary interface between Java and native code.',
     internals: [
       'Native method binding: symbol lookup or `RegisterNatives`',
@@ -101,10 +99,9 @@ JNIEXPORT jint JNICALL Java_NativeMath_add
     scope: 'process',
     summary:
       'What the JVM runs on: an OS providing processes, threads, virtual memory and I/O, and a CPU executing machine code.',
-    beginner:
+    simple:
       'The JVM is itself an ordinary program. The operating system gives it memory, threads and access to files and the network, and the CPU executes the machine code the JVM generates.',
-    technical:
-      "Keep the layers distinct: OS threads vs Java threads, the process's virtual memory vs the Java heap, OS system calls vs Java APIs, CPU instructions vs JVM bytecode. HotSpot is a C++ program with platform-specific code for each OS and CPU (Linux, macOS, Windows, AIX; x86-64, AArch64, RISC-V, PowerPC, s390). Java code reaches the OS only through the JVM and the JDK's native libraries.",
+    deep: "Keep the layers distinct: OS threads vs Java threads, the process's virtual memory vs the Java heap, OS system calls vs Java APIs, CPU instructions vs JVM bytecode. HotSpot is a C++ program with platform-specific code for each OS and CPU (Linux, macOS, Windows, AIX; x86-64, AArch64, RISC-V, PowerPC, s390). Java code reaches the OS only through the JVM and the JDK's native libraries.",
     purpose: 'Provide the real resources that the JVM virtualizes for Java code.',
     internals: ['Threads and the scheduler', 'Virtual memory', 'System calls', 'CPU'],
     inputs: ['Requests from the JVM process'],
@@ -131,10 +128,9 @@ JNIEXPORT jint JNICALL Java_NativeMath_add
     scope: 'process',
     summary:
       'OS threads that back Java platform threads 1:1; the OS scheduler decides which run on which CPU.',
-    beginner:
+    simple:
       'Each normal Java thread is backed by one operating-system thread. The OS decides when each one gets CPU time.',
-    technical:
-      'HotSpot creates one OS thread per platform `Thread` (and for its own GC and compiler threads). The OS scheduler preempts and context-switches them; Java thread priorities are only hints. Virtual threads are scheduled by the JDK (a `ForkJoinPool` of carrier threads) and mounted on platform threads, so many virtual threads share few OS threads.',
+    deep: 'HotSpot creates one OS thread per platform `Thread` (and for its own GC and compiler threads). The OS scheduler preempts and context-switches them; Java thread priorities are only hints. Virtual threads are scheduled by the JDK (a `ForkJoinPool` of carrier threads) and mounted on platform threads, so many virtual threads share few OS threads.',
     purpose: 'Run threads concurrently on the available CPUs.',
     internals: ['Kernel threads', 'Run queues and preemption', 'Context switches'],
     inputs: ['Thread creation from the JVM'],
@@ -165,10 +161,9 @@ JNIEXPORT jint JNICALL Java_NativeMath_add
     scope: 'process',
     summary:
       'The process address space the OS maps to physical memory; the JVM reserves and commits its areas from it.',
-    beginner:
+    simple:
       'The OS gives each process its own address space. The JVM asks for big ranges of it for the heap, Metaspace, code and stacks, and the OS supplies real memory as pages are touched.',
-    technical:
-      "HotSpot *reserves* address space up front (for example the whole maximum heap and the 240 MB code cache) and *commits* memory as needed; the OS backs committed pages with physical memory lazily, on first touch. Resident set size (RSS) is what is actually in RAM. Compressed oops use the heap's placement in the address space to encode 32-bit references.",
+    deep: "HotSpot *reserves* address space up front (for example the whole maximum heap and the 240 MB code cache) and *commits* memory as needed; the OS backs committed pages with physical memory lazily, on first touch. Resident set size (RSS) is what is actually in RAM. Compressed oops use the heap's placement in the address space to encode 32-bit references.",
     purpose: 'Isolate processes and let the JVM manage large, sparse memory areas.',
     internals: [
       'Reserved vs committed vs resident memory',
@@ -197,10 +192,9 @@ JNIEXPORT jint JNICALL Java_NativeMath_add
     scope: 'process',
     summary:
       'The OS entry points behind I/O, memory mapping and thread parking: read, write, mmap, futex, epoll…',
-    beginner:
+    simple:
       'When Java reads a file or sends network data, the JDK eventually asks the operating system to do it through a system call.',
-    technical:
-      "Java I/O APIs bottom out in the JDK's native libraries (`libnio`, `libnet`, `libjava`), which issue system calls such as `read`, `write`, `openat`, `epoll_wait` and `mmap` on Linux. The JVM itself uses system calls for memory (`mmap`, `madvise`), threads (`clone`, `futex` for parking) and signals (used, for example, for implicit null checks).",
+    deep: "Java I/O APIs bottom out in the JDK's native libraries (`libnio`, `libnet`, `libjava`), which issue system calls such as `read`, `write`, `openat`, `epoll_wait` and `mmap` on Linux. The JVM itself uses system calls for memory (`mmap`, `madvise`), threads (`clone`, `futex` for parking) and signals (used, for example, for implicit null checks).",
     purpose: 'Access hardware and kernel services safely from user space.',
     internals: [
       'File and socket I/O',
@@ -229,10 +223,9 @@ JNIEXPORT jint JNICALL Java_NativeMath_add
     scope: 'process',
     summary:
       "Executes native machine instructions: the JVM's own code, interpreter templates, JIT-compiled methods and native libraries.",
-    beginner:
+    simple:
       "The processor never sees bytecode. It only runs machine code: the JVM's own code, the interpreter's templates, compiled methods and native libraries.",
-    technical:
-      "Every instruction the CPU executes on behalf of a Java program comes from one of: HotSpot's C++ code, the template interpreter and stubs generated at start-up, nmethods produced by C1/C2, or native libraries. The JIT targets the actual CPU and can use its features (for example AVX vector instructions on x86-64), which a portable ahead-of-time build might not assume.",
+    deep: "Every instruction the CPU executes on behalf of a Java program comes from one of: HotSpot's C++ code, the template interpreter and stubs generated at start-up, nmethods produced by C1/C2, or native libraries. The JIT targets the actual CPU and can use its features (for example AVX vector instructions on x86-64), which a portable ahead-of-time build might not assume.",
     purpose: 'Execute instructions.',
     internals: [
       'Instruction set (x86-64, AArch64, …)',

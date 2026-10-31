@@ -2,9 +2,13 @@ import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { isComponentId, type ComponentId } from '@/content/jvm';
 import { SCENARIOS } from '@/content/jvm/scenarios';
+import type { MapView } from '@/hooks/useLearningState';
 
 export const MODES = ['anatomy', 'exploded', 'internal', 'execution'] as const;
 export type ExplorerMode = (typeof MODES)[number];
+
+/** `view=overview` or `view=full`; absent means "the learner's last choice". */
+const isView = (value: string | null): value is MapView => value === 'overview' || value === 'full';
 
 const isMode = (value: string | null): value is ExplorerMode =>
   MODES.includes(value as ExplorerMode);
@@ -25,6 +29,8 @@ export function useAnatomyState() {
     ? params.get('s')!
     : SCENARIOS[0]!.id;
   const scenario = SCENARIOS.find((s) => s.id === scenarioId)!;
+  const rawView = params.get('view');
+  const view: MapView | null = isView(rawView) ? rawView : null;
   const rawStep = Number(params.get('step') ?? '0');
   const step = Number.isInteger(rawStep)
     ? Math.min(Math.max(rawStep, 0), scenario.steps.length - 1)
@@ -51,13 +57,18 @@ export function useAnatomyState() {
     () => ({
       selectedId,
       mode,
+      view,
       scenario,
       step,
+      setView: (next: MapView) => update({ view: next }, true),
       select: (id: ComponentId | null) => update({ c: id }),
       setMode: (next: ExplorerMode) => update({ mode: next === 'anatomy' ? null : next }),
       setScenario: (id: string) => update({ s: id, step: null }, true),
       setStep: (index: number) => update({ step: index === 0 ? null : String(index) }, true),
+      /** Opens a walkthrough at a step ("Watch it run" from the inspector). */
+      watch: (scenarioId: string, index: number) =>
+        update({ mode: 'execution', s: scenarioId, step: index === 0 ? null : String(index) }),
     }),
-    [selectedId, mode, scenario, step, update],
+    [selectedId, mode, view, scenario, step, update],
   );
 }

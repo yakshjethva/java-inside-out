@@ -37,6 +37,8 @@ export interface ArchitectureNodeProps {
   related?: boolean;
   state?: NodeState;
   collapsedCount?: number;
+  /** Plain-language title and description drawn inside a collapsed region (overview map). */
+  region?: { title: string; blurb: string };
   glyph?: ReactNode;
   ariaLabel: string;
   tabIndex: number;
@@ -77,6 +79,7 @@ export function ArchitectureNode(props: ArchitectureNodeProps) {
     related,
     state,
     collapsedCount,
+    region,
     glyph,
     ariaLabel,
     tabIndex,
@@ -224,10 +227,14 @@ export function ArchitectureNode(props: ArchitectureNodeProps) {
         pointerEvents="none"
       />
 
-      <NodeText
-        {...{ rect, label, caption, level, shape, plate, step, lod, colors, isContainer }}
-        hasGlyph={Boolean(glyph)}
-      />
+      {region && collapsedCount !== undefined ? (
+        <RegionText rect={rect} region={region} parts={collapsedCount} lod={lod} colors={colors} />
+      ) : (
+        <NodeText
+          {...{ rect, label, caption, level, shape, plate, step, lod, colors, isContainer }}
+          hasGlyph={Boolean(glyph)}
+        />
+      )}
 
       {glyph && lod !== 'overview' && !isContainer && <g pointerEvents="none">{glyph}</g>}
 
@@ -271,7 +278,7 @@ export function ArchitectureNode(props: ArchitectureNodeProps) {
         </g>
       )}
 
-      {collapsedCount !== undefined && (
+      {collapsedCount !== undefined && !region && (
         <g transform={`translate(${rect.w - 44} ${rect.h - 20})`} pointerEvents="none">
           <rect
             width={36}
@@ -327,6 +334,115 @@ export function ArchitectureNode(props: ArchitectureNodeProps) {
         </g>
       )}
     </motion.g>
+  );
+}
+
+/** Greedy word wrap for SVG text. */
+function wrapWords(text: string, max: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(/\s+/)) {
+    if (line && (line + ' ' + word).length > max) {
+      lines.push(line);
+      line = word;
+    } else line = line ? `${line} ${word}` : word;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/**
+ * A collapsed region on the overview map: a plain-language title, one line of
+ * description and how many parts are inside. Zoomed far out, only the title
+ * remains, drawn at a constant screen size.
+ */
+function RegionText({
+  rect,
+  region,
+  parts,
+  lod,
+  colors,
+}: {
+  rect: Rect;
+  region: { title: string; blurb: string };
+  parts: number;
+  lod: Lod;
+  colors: { text: string };
+}) {
+  if (lod === 'overview') {
+    // Constant screen size, but never wider than the region itself.
+    const fit = Math.min((rect.w * 0.86) / (region.title.length * 0.56), rect.h * 0.5);
+    return (
+      <text
+        x={rect.w / 2}
+        y={rect.h / 2}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="var(--color-fg)"
+        fontWeight={600}
+        style={{ fontSize: `min(calc(13px / var(--k, 1)), ${fit.toFixed(1)}px)` }}
+        stroke="var(--color-ink-950)"
+        strokeWidth="calc(3px / var(--k, 1))"
+        paintOrder="stroke"
+        pointerEvents="none"
+      >
+        {region.title}
+      </text>
+    );
+  }
+  if (rect.h < 90) {
+    // A long, low strip (the platform): one line.
+    return (
+      <text x={24} y={rect.h / 2 + 9} pointerEvents="none">
+        <tspan fontFamily="var(--font-serif)" fontSize={28} fill="var(--color-fg)">
+          {region.title}
+        </tspan>
+        <tspan dx={18} fontSize={20} fill="var(--color-fg-muted)">
+          {region.blurb}
+        </tspan>
+      </text>
+    );
+  }
+  if (rect.h < 160) {
+    // A small box (build time): title and description, nothing else.
+    return (
+      <g pointerEvents="none">
+        <text x={22} y={44} fontFamily="var(--font-serif)" fontSize={28} fill="var(--color-fg)">
+          {region.title}
+        </text>
+        {wrapWords(region.blurb, Math.floor((rect.w - 44) / 9.5)).map((line, i) => (
+          <text key={i} x={22} y={74 + i * 24} fontSize={18} fill="var(--color-fg-muted)">
+            {line}
+          </text>
+        ))}
+      </g>
+    );
+  }
+  const blurbSize = 23;
+  const lines = wrapWords(
+    region.blurb,
+    Math.max(12, Math.floor((rect.w - 52) / (blurbSize * 0.5))),
+  );
+  return (
+    <g pointerEvents="none">
+      <text x={26} y={58} fontFamily="var(--font-serif)" fontSize={38} fill="var(--color-fg)">
+        {region.title}
+      </text>
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={26}
+          y={98 + i * blurbSize * 1.35}
+          fontSize={blurbSize}
+          fill="var(--color-fg-muted)"
+        >
+          {line}
+        </text>
+      ))}
+      <text x={26} y={rect.h - 26} fontSize={17} fill={colors.text}>
+        {parts} {parts === 1 ? 'part' : 'parts'} inside · select to open
+      </text>
+    </g>
   );
 }
 

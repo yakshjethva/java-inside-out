@@ -9,6 +9,7 @@ import { PageLoading } from './PageLoading';
  */
 export const pageLoaders = {
   home: () => import('@/pages/HomePage'),
+  start: () => import('@/pages/StartHerePage'),
   paths: () => import('@/pages/LearningPathsPage'),
   anatomy: () => import('@/pages/JvmAnatomyPage'),
   glossary: () => import('@/pages/GlossaryPage'),
@@ -27,6 +28,10 @@ export const routes: RouteObject[] = [
     // while the first page loads.
     children: [
       { index: true, lazy: () => pageLoaders.home().then((m) => ({ Component: m.HomePage })) },
+      {
+        path: 'start',
+        lazy: () => pageLoaders.start().then((m) => ({ Component: m.StartHerePage })),
+      },
       {
         path: 'paths',
         lazy: () => pageLoaders.paths().then((m) => ({ Component: m.LearningPathsPage })),

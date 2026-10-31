@@ -9,12 +9,23 @@
 
 const PREFIX = 'inside-java:v1:';
 
-export function readJson<T>(key: string, validate: (value: unknown) => value is T, fallback: T): T {
+/**
+ * Reads and validates a stored value. `migrate` upgrades data written by an
+ * older release before validation, so a format change never silently resets
+ * what the learner saved.
+ */
+export function readJson<T>(
+  key: string,
+  validate: (value: unknown) => value is T,
+  fallback: T,
+  migrate?: (value: unknown) => unknown,
+): T {
   try {
     const raw = globalThis.localStorage?.getItem(PREFIX + key);
     if (raw == null) return fallback;
     const parsed: unknown = JSON.parse(raw);
-    return validate(parsed) ? parsed : fallback;
+    const upgraded = migrate ? migrate(parsed) : parsed;
+    return validate(upgraded) ? upgraded : fallback;
   } catch {
     return fallback;
   }
@@ -49,8 +60,9 @@ export function createPersistentStore<T>(
   key: string,
   validate: (value: unknown) => value is T,
   defaults: T,
+  migrate?: (value: unknown) => unknown,
 ) {
-  let state = readJson(key, validate, defaults);
+  let state = readJson(key, validate, defaults, migrate);
   const listeners = new Set<() => void>();
 
   const emit = () => listeners.forEach((listener) => listener());
@@ -58,7 +70,7 @@ export function createPersistentStore<T>(
   if (typeof window !== 'undefined') {
     window.addEventListener('storage', (event) => {
       if (event.key === storageKey(key)) {
-        state = readJson(key, validate, defaults);
+        state = readJson(key, validate, defaults, migrate);
         emit();
       }
     });

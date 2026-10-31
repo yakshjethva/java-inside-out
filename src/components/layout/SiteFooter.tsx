@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { PRIMARY_NAV, SECONDARY_NAV, SITE } from '@/data/site';
+import { MORE_NAV, PRIMARY_NAV, SITE } from '@/data/site';
 import { LogoMark } from './Logo';
 
 export function SiteFooter() {
@@ -12,16 +12,17 @@ export function SiteFooter() {
             <span className="font-serif text-lg text-fg">Inside Java</span>
           </div>
           <p className="mt-2 max-w-md text-[13.5px] text-fg-muted">
-            {SITE.tagline} An open-source atlas of the JVM. Specification baseline:{' '}
-            {SITE.specVersion}. Implementation details: {SITE.implementationVersion}.
+            {SITE.tagline} A free, open-source way to see what happens inside Java programs.
+            Specification baseline: {SITE.specVersion}. Implementation details:{' '}
+            {SITE.implementationVersion}.
           </p>
           <p className="mt-3 text-[12.5px] text-fg-subtle">
             MIT licensed · no accounts, no tracking, no backend · your progress stays in your
             browser.
           </p>
         </div>
-        <nav aria-label="Footer: explore">
-          <p className="kicker">Explore</p>
+        <nav aria-label="Footer: learn">
+          <p className="text-[13px] font-medium text-fg">Learn</p>
           <ul className="mt-2 space-y-1.5 text-[13.5px]">
             {PRIMARY_NAV.map((item) => (
               <li key={item.to}>
@@ -33,9 +34,9 @@ export function SiteFooter() {
           </ul>
         </nav>
         <nav aria-label="Footer: project">
-          <p className="kicker">Project</p>
+          <p className="text-[13px] font-medium text-fg">Project</p>
           <ul className="mt-2 space-y-1.5 text-[13.5px]">
-            {SECONDARY_NAV.map((item) => (
+            {MORE_NAV.map((item) => (
               <li key={item.to}>
                 <Link to={item.to} className="text-fg-muted hover:text-fg">
                   {item.label}

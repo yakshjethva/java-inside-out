@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { CodeBlock } from '@/components/code/CodeBlock';
 import { AccuracyNote } from '@/components/learning/AccuracyNote';
-import { InlineRichText, RichText } from '@/components/learning/RichText';
+import { LevelSwitch } from '@/components/learning/LevelSwitch';
+import { LevelText } from '@/components/learning/LevelText';
+import { InlineRichText } from '@/components/learning/RichText';
 import { SourceList } from '@/components/learning/SourceReference';
 import { ExecutionTimeline } from '@/components/timeline/ExecutionTimeline';
 import { StepController } from '@/components/timeline/StepController';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { getComponentDoc, type ComponentId } from '@/content/jvm';
 import type { ExplanationLevel } from '@/hooks/useLearningState';
 import { usePlayback } from '@/hooks/usePlayback';
@@ -97,21 +98,11 @@ export function ExecutionPanel({
           <InlineRichText text={current.title} />
         </h3>
         <div className="mt-2">
-          <SegmentedControl
-            label="Explanation level"
-            size="sm"
-            value={level}
-            onChange={onLevelChange}
-            segments={[
-              { value: 'beginner', label: 'Beginner' },
-              { value: 'technical', label: 'Technical' },
-            ]}
-          />
+          <LevelSwitch value={level} onChange={onLevelChange} />
         </div>
-        <RichText
-          className="prose-ij mt-3"
-          text={level === 'beginner' ? current.beginner : current.technical}
-        />
+        <div className="mt-3">
+          <LevelText content={current} level={level} />
+        </div>
         {current.note && (
           <p className="mt-3 rounded-md border border-warn-500/30 bg-warn-900/25 p-2.5 text-[13px] text-warn-300">
             <span className="font-medium">Note: </span>
