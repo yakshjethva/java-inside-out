@@ -28,8 +28,26 @@ export function RootLayout() {
   useEffect(() => {
     const meta = pageMeta(sitePath(location.pathname));
     document.querySelector('meta[name="description"]')?.setAttribute('content', meta.description);
-    const canonical = document.querySelector('link[rel="canonical"]');
-    if (canonical && meta.indexable) canonical.setAttribute('href', canonicalUrl(meta.path));
+    // Unknown pages are noindex with no canonical URL, as in their prerendered HTML.
+    let canonical = document.querySelector('link[rel="canonical"]');
+    let robots = document.querySelector('meta[name="robots"]');
+    if (meta.indexable) {
+      robots?.remove();
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.append(canonical);
+      }
+      canonical.setAttribute('href', canonicalUrl(meta.path));
+    } else {
+      canonical?.remove();
+      if (!robots) {
+        robots = document.createElement('meta');
+        robots.setAttribute('name', 'robots');
+        document.head.append(robots);
+      }
+      robots.setAttribute('content', 'noindex');
+    }
   }, [location.pathname]);
 
   useEffect(() => {

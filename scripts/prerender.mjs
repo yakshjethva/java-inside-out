@@ -10,7 +10,6 @@
  * 404.html and, for builds served from the site root (the canonical Vercel
  * deployment), sitemap.xml and robots.txt. See docs/SEO_AND_DEPLOYMENT.md.
  */
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -117,11 +116,10 @@ write('404.html', pageHtml(NOT_FOUND_META, notFound.html, '/404'));
 
 const rootBuild = BASE_URL === '/';
 if (rootBuild) {
-  const lastmod = lastCommitDate() ?? new Date().toISOString().slice(0, 10);
+  // No <lastmod>: the build knows no page's own modification date, and one
+  // shared date would mark unchanged pages as modified on every commit.
   const urls = sitemapPaths()
-    .map(
-      (p) => `  <url>\n    <loc>${SITE_URL}${p}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`,
-    )
+    .map((p) => `  <url>\n    <loc>${SITE_URL}${p}</loc>\n  </url>`)
     .join('\n');
   write(
     'sitemap.xml',
@@ -134,21 +132,6 @@ console.log(
   `prerendered ${PRERENDER_PATHS.length} pages and 404.html for base ${BASE_URL}` +
     (rootBuild ? ', with sitemap.xml and robots.txt' : ' (mirror build: no sitemap or robots.txt)'),
 );
-
-/** The date of the last commit: when the site's content last changed. */
-function lastCommitDate() {
-  try {
-    const date = execSync('git log -1 --format=%cs', {
-      cwd: root,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
-      .toString()
-      .trim();
-    return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Search engines and AI search crawlers may index the site. Crawlers that

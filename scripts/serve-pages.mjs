@@ -66,9 +66,23 @@ if (!fs.existsSync(path.join(root, 'index.html'))) {
   process.exit(1);
 }
 
+/** Whether Accept-Encoding allows gzip: listed (or `*`) with a quality above zero. */
+function acceptsGzip(header = '') {
+  let quality = 0;
+  for (const part of header.split(',')) {
+    const [name, ...params] = part.trim().toLowerCase().split(';');
+    if (name !== 'gzip' && name !== '*') continue;
+    const q = params.map((p) => p.trim()).find((p) => p.startsWith('q='));
+    const value = q ? Number(q.slice(2)) : 1;
+    // An explicit gzip entry wins over the wildcard.
+    if (name === 'gzip') return value > 0;
+    quality = value;
+  }
+  return quality > 0;
+}
+
 function sendFile(req, res, status, file, method) {
-  const gzip =
-    COMPRESSIBLE.has(path.extname(file)) && /\bgzip\b/.test(req.headers['accept-encoding'] ?? '');
+  const gzip = COMPRESSIBLE.has(path.extname(file)) && acceptsGzip(req.headers['accept-encoding']);
   res.writeHead(status, {
     'content-type': TYPES[path.extname(file)] ?? 'application/octet-stream',
     'cache-control': 'no-cache',

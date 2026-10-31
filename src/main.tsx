@@ -21,8 +21,13 @@ async function loadInitialRoutes() {
   await Promise.all(
     matches.map(async ({ route }) => {
       if (typeof route.lazy !== 'function') return;
-      const loaded = await route.lazy();
-      Object.assign(route, { ...loaded, lazy: undefined });
+      try {
+        const loaded = await route.lazy();
+        Object.assign(route, { ...loaded, lazy: undefined });
+      } catch {
+        // Offline, or a deploy replaced the chunk: leave route.lazy in place so
+        // the router retries it and can show its error page.
+      }
     }),
   );
 }

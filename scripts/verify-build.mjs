@@ -152,7 +152,7 @@ if (BASE_URL === '/') {
   if (robots === null) fail('robots.txt', 'missing from a root build');
   else {
     if (!robots.includes(`Sitemap: ${SITE_URL}/sitemap.xml`)) fail('robots.txt', 'no sitemap line');
-    for (const agent of ['GPTBot', 'ClaudeBot', 'Google-Extended', 'CCBot'])
+    for (const agent of ['GPTBot', 'ClaudeBot', 'Google-Extended', 'Applebot-Extended', 'CCBot'])
       if (!new RegExp(`User-agent: ${agent}\\nDisallow: /\\n`).test(robots))
         fail(
           'robots.txt',
