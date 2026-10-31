@@ -63,11 +63,15 @@ export function Loading3D() {
 }
 
 interface BoundaryProps {
-  fallback: (error: Error, reset: () => void) => ReactNode;
+  fallback: (error: Error) => ReactNode;
   children: ReactNode;
 }
 
-/** Catches a failed chunk load or renderer start, and offers a retry. */
+/**
+ * Catches a failed chunk load or renderer start. The fallback offers the way
+ * out: re-rendering cannot retry a failed download, because the browser keeps
+ * a failed module import failed until the page is loaded again.
+ */
 export class Viewer3DBoundary extends Component<BoundaryProps, { error: Error | null }> {
   override state = { error: null as Error | null };
 
@@ -81,8 +85,7 @@ export class Viewer3DBoundary extends Component<BoundaryProps, { error: Error | 
   }
 
   override render() {
-    if (this.state.error)
-      return this.props.fallback(this.state.error, () => this.setState({ error: null }));
+    if (this.state.error) return this.props.fallback(this.state.error);
     return this.props.children;
   }
 }

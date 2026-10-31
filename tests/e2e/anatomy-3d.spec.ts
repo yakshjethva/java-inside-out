@@ -186,6 +186,25 @@ test.describe('3D anatomy', () => {
     await modelReady(page);
   });
 
+  test.describe('when the 3D code fails to download', () => {
+    // Without a service worker every request goes through page.route.
+    test.use({ serviceWorkers: 'block' });
+
+    test('trying again downloads it again and starts the model', async ({ page }) => {
+      let requests = 0;
+      await page.route(/\/assets\/Anatomy3D-[^/]+\.js$/, (route) => {
+        requests += 1;
+        return requests === 1 ? route.abort('failed') : route.continue();
+      });
+      await openExplorer(page, 'anatomy?viewer=3d');
+      await expect(page.getByText('The 3D model could not start')).toBeVisible();
+      await page.getByRole('button', { name: 'Try again' }).click();
+      await modelReady(page);
+      await expect(page).toHaveURL(/viewer=3d/);
+      expect(requests).toBeGreaterThan(1);
+    });
+  });
+
   test('the list viewer shows every part without any drawing', async ({ page }) => {
     await openExplorer(page, 'anatomy?viewer=list');
     await expect(page.getByText('Every part, as a list')).toBeVisible();

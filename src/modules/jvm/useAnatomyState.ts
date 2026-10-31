@@ -69,6 +69,8 @@ export function useAnatomyState() {
       step,
       setView: (next: MapView) => update({ view: next }, true),
       setViewer: (next: ExplorerViewer) => update({ viewer: next === '2d' ? null : next }),
+      /** The 2D map, leaving "Look inside" for the overview: one history entry. */
+      showMap: () => update({ viewer: null, ...(mode === 'internal' ? { mode: null } : {}) }),
       select: (id: ComponentId | null) => update({ c: id }),
       setMode: (next: ExplorerMode) => update({ mode: next === 'anatomy' ? null : next }),
       setScenario: (id: string) => update({ s: id, step: null }, true),

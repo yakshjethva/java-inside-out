@@ -187,9 +187,10 @@ export function AnatomyExplorer() {
     setTourStep(null);
     preferenceActions.dismiss(TOUR_ID);
   };
-  // The tour points at the map, which "Look inside" replaces, so it opens on the map.
+  // The tour points at the 2D map, which "Look inside", the 3D model and the
+  // list replace, so it opens on the map.
   const openTour = () => {
-    if (mode === 'internal') state.setMode('anatomy');
+    if (mode === 'internal' || state.viewer !== '2d') state.showMap();
     setTourStep(0);
     // Set before the first paint for learners who had dismissed the tour (scripts/prerender.mjs).
     document.documentElement.removeAttribute('data-tour-dismissed');
@@ -472,12 +473,15 @@ export function AnatomyExplorer() {
           onChange={state.setMode}
           segments={MODE_SEGMENTS}
         />
-        <SegmentedControl
-          label="Viewer"
-          value={state.viewer}
-          onChange={state.setViewer}
-          segments={VIEWER_SEGMENTS}
-        />
+        {/* "Look inside" is a 2D dissection whatever the viewer, so the choice is hidden there. */}
+        {mode !== 'internal' && (
+          <SegmentedControl
+            label="Viewer"
+            value={state.viewer}
+            onChange={state.setViewer}
+            segments={VIEWER_SEGMENTS}
+          />
+        )}
         {mode === 'execution' && (
           <label className="flex items-center gap-2 text-[12.5px] text-fg-subtle">
             <span className="sr-only sm:not-sr-only">Walkthrough</span>
@@ -690,14 +694,16 @@ export function AnatomyExplorer() {
             )
           ) : state.viewer === '3d' ? (
             <Viewer3DBoundary
-              fallback={(_, retry) => (
+              fallback={() => (
                 <Notice3D
                   title="The 3D model could not start"
                   onUse2D={() => state.setViewer('2d')}
                   action={
+                    // A browser keeps a failed module download failed for the life of the
+                    // page, so trying again reloads it; the URL keeps the 3D viewer chosen.
                     <button
                       type="button"
-                      onClick={retry}
+                      onClick={() => window.location.reload()}
                       className="inline-flex h-9 items-center rounded-md border border-ink-500 px-3 text-[13.5px] text-fg hover:border-exec-400"
                     >
                       Try again
@@ -804,7 +810,7 @@ export function AnatomyExplorer() {
 
           {/* The tour card floats over the map from 640 px; CSS picks the placement, so the
               prerendered page already has the right one and nothing moves on load. */}
-          {tourStep !== null && mode !== 'internal' && (
+          {tourStep !== null && mode !== 'internal' && state.viewer === '2d' && (
             <div className="hidden sm:block">
               <ExplorerTour step={tourStep} onStep={setTourStep} onClose={closeTour} />
             </div>
@@ -843,7 +849,7 @@ export function AnatomyExplorer() {
         </div>
 
         {/* On small screens the tour sits under the map instead of covering it. */}
-        {tourStep !== null && mode !== 'internal' && (
+        {tourStep !== null && mode !== 'internal' && state.viewer === '2d' && (
           <div className="sm:hidden">
             <ExplorerTour
               step={tourStep}
