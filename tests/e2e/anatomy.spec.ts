@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 const inspector = (page: Page) => page.getByRole('complementary', { name: 'Component inspector' });
 const plateNode = (page: Page, name: string) =>

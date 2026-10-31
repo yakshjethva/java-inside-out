@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /** Collects console errors and warnings, uncaught exceptions and failed requests for a page. */
 function watchForProblems(page: Page) {
@@ -187,5 +188,31 @@ test.describe('offline', () => {
     ).toBeVisible();
     await page.getByRole('radio', { name: /Watch it run/ }).click();
     await expect(page.getByText('Step 1 of', { exact: false })).toBeVisible();
+  });
+});
+
+test.describe('small screens', () => {
+  test('no page scrolls sideways on a 360 px screen', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'Checked once, on the mobile project.');
+    await page.setViewportSize({ width: 360, height: 780 });
+    for (const path of [
+      './',
+      'start?chapter=memory',
+      'learn',
+      'learn/heap-vs-stack',
+      'anatomy',
+      'anatomy?viewer=list',
+      'anatomy?mode=execution&s=jit',
+      'glossary',
+      'references',
+      'contributing',
+    ]) {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle');
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, path).toBe(0);
+    }
   });
 });

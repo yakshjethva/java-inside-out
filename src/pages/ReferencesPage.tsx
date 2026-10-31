@@ -102,7 +102,7 @@ export function ReferencesPage() {
                         <span className="sr-only">(opens in a new tab)</span>
                       </a>
                       <p className="text-[13.5px] text-fg-muted">{ref.description}</p>
-                      <p className="mt-0.5 text-[12.5px] text-fg-subtle">
+                      <p className="mt-0.5 text-[12.5px] [overflow-wrap:anywhere] text-fg-subtle">
                         {ref.publisher} · {ref.version}
                       </p>
                       {citedBy.length > 0 && (
@@ -113,7 +113,7 @@ export function ReferencesPage() {
                               {index > 0 && ', '}
                               <Link
                                 to={`/anatomy?c=${item.id}`}
-                                className="text-exec-300 hover:text-exec-200"
+                                className="text-exec-300 underline decoration-exec-500/40 underline-offset-2 hover:text-exec-200"
                               >
                                 {item.name}
                               </Link>

@@ -139,7 +139,7 @@ export function GlossaryPage() {
                         <p className="kicker">Where it fits</p>
                         <Link
                           to={`/anatomy?c=${component.id}`}
-                          className="mt-1 inline-flex items-center gap-1.5 text-exec-300 hover:text-exec-200"
+                          className="mt-1 inline-flex min-h-6 items-center gap-1.5 text-exec-300 hover:text-exec-200"
                         >
                           <Crosshair size={14} aria-hidden /> {component.name} in the JVM anatomy
                         </Link>
@@ -156,7 +156,7 @@ export function GlossaryPage() {
                                 <a
                                   href={`#${id}`}
                                   onClick={() => setQuery('')}
-                                  className="rounded border border-ink-600 px-2 py-0.5 text-[13px] text-fg-muted hover:border-rt-500/60 hover:text-rt-200"
+                                  className="inline-flex min-h-6 items-center rounded border border-ink-600 px-2 py-0.5 text-[13px] text-fg-muted hover:border-rt-500/60 hover:text-rt-200"
                                 >
                                   {related.term}
                                 </a>

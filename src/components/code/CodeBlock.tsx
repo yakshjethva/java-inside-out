@@ -134,7 +134,9 @@ export function CodeBlock({
           </button>
         </span>
       </figcaption>
-      <div className="code-surface" translate="no">
+      {/* Focusable so a keyboard can scroll long lines. */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
+      <div className="code-surface" translate="no" tabIndex={0}>
         {usesShiki && html ? (
           // Shiki output is generated locally from our own content (no user input).
           <div dangerouslySetInnerHTML={{ __html: html }} />
@@ -155,6 +157,9 @@ export function CodeBlock({
           </p>
           <pre
             translate="no"
+            // Focusable so a keyboard can scroll long lines.
+            // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+            tabIndex={0}
             className="overflow-x-auto px-3 pt-1 pb-3 text-[12px] leading-relaxed text-ok-300"
           >
             {output}

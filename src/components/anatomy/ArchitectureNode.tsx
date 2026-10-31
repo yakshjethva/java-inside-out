@@ -154,185 +154,196 @@ export function ArchitectureNode(props: ArchitectureNodeProps) {
       onFocus={onFocus}
       className="ij-node cursor-pointer outline-none"
     >
-      {/* Opaque backing so connectors behind leaves do not show through. */}
-      {!isContainer && (
+      {/* The drawing repeats what the label says, which starts with the visible name. */}
+      <g aria-hidden="true">
+        {/* Opaque backing so connectors behind leaves do not show through. */}
+        {!isContainer && (
+          <motion.rect
+            initial={false}
+            animate={{ width: rect.w, height: rect.h }}
+            transition={transition}
+            rx={radius}
+            fill="var(--color-ink-850)"
+          />
+        )}
+        {(selected || state) && !isContainer && (
+          <motion.rect
+            initial={false}
+            animate={{ width: rect.w, height: rect.h }}
+            transition={transition}
+            rx={radius}
+            fill="none"
+            stroke={stroke}
+            strokeOpacity={0.45}
+            strokeWidth={6}
+            filter="url(#ij-glow)"
+            className={state === 'active' ? 'ij-pulse' : undefined}
+          />
+        )}
         <motion.rect
           initial={false}
           animate={{ width: rect.w, height: rect.h }}
           transition={transition}
           rx={radius}
-          fill="var(--color-ink-850)"
-        />
-      )}
-      {(selected || state) && !isContainer && (
-        <motion.rect
-          initial={false}
-          animate={{ width: rect.w, height: rect.h }}
-          transition={transition}
-          rx={radius}
-          fill="none"
+          fill={level === 'frame' ? 'rgb(255 255 255 / 0.012)' : colors.tint}
           stroke={stroke}
-          strokeOpacity={0.45}
-          strokeWidth={6}
-          filter="url(#ij-glow)"
-          className={state === 'active' ? 'ij-pulse' : undefined}
+          strokeOpacity={selected || state ? 1 : related ? 1 : strokeOpacity}
+          strokeWidth={strokeWidth}
+          strokeDasharray={dash}
+          strokeLinecap={provenance === 'platform' ? 'round' : undefined}
+          className="ij-node-frame"
         />
-      )}
-      <motion.rect
-        initial={false}
-        animate={{ width: rect.w, height: rect.h }}
-        transition={transition}
-        rx={radius}
-        fill={level === 'frame' ? 'rgb(255 255 255 / 0.012)' : colors.tint}
-        stroke={stroke}
-        strokeOpacity={selected || state ? 1 : related ? 1 : strokeOpacity}
-        strokeWidth={strokeWidth}
-        strokeDasharray={dash}
-        strokeLinecap={provenance === 'platform' ? 'round' : undefined}
-        className="ij-node-frame"
-      />
-      {shape === 'memory' && !isContainer && (
-        <motion.rect
-          initial={false}
-          animate={{ width: rect.w, height: rect.h }}
-          transition={transition}
-          rx={radius}
-          fill="url(#ij-hatch)"
-          pointerEvents="none"
-        />
-      )}
-      {shape === 'phase' && (
+        {shape === 'memory' && !isContainer && (
+          <motion.rect
+            initial={false}
+            animate={{ width: rect.w, height: rect.h }}
+            transition={transition}
+            rx={radius}
+            fill="url(#ij-hatch)"
+            pointerEvents="none"
+          />
+        )}
+        {shape === 'phase' && (
+          <rect
+            x={0}
+            y={4}
+            width={3}
+            height={Math.max(0, rect.h - 8)}
+            rx={1.5}
+            fill={stroke}
+            opacity={0.9}
+          />
+        )}
+
+        {/* Focus ring (keyboard). */}
         <rect
-          x={0}
-          y={4}
-          width={3}
-          height={Math.max(0, rect.h - 8)}
-          rx={1.5}
-          fill={stroke}
-          opacity={0.9}
-        />
-      )}
-
-      {/* Focus ring (keyboard). */}
-      <rect
-        x={-4}
-        y={-4}
-        width={rect.w + 8}
-        height={rect.h + 8}
-        rx={radius + 3}
-        fill="none"
-        stroke="var(--color-exec-300)"
-        strokeWidth={2}
-        className="ij-focus-ring"
-        pointerEvents="none"
-      />
-
-      {region && collapsedCount !== undefined ? (
-        <RegionText rect={rect} region={region} parts={collapsedCount} lod={lod} colors={colors} />
-      ) : (
-        <NodeText
-          {...{ rect, label, caption, level, shape, plate, step, lod, colors, isContainer }}
-          hasGlyph={Boolean(glyph)}
-        />
-      )}
-
-      {glyph && lod !== 'overview' && !isContainer && <g pointerEvents="none">{glyph}</g>}
-
-      {provenance === 'hotspot' && lod !== 'overview' && level !== 'frame' && rect.w >= 50 && (
-        <g
-          transform={
-            isContainer ? `translate(${rect.w - 30} 8)` : `translate(${rect.w - 23} ${rect.h - 15})`
-          }
+          x={-4}
+          y={-4}
+          width={rect.w + 8}
+          height={rect.h + 8}
+          rx={radius + 3}
+          fill="none"
+          stroke="var(--color-exec-300)"
+          strokeWidth={2}
+          className="ij-focus-ring"
           pointerEvents="none"
-        >
-          <rect
-            width={isContainer ? 24 : 19}
-            height={11}
-            rx={2}
-            fill="var(--color-ink-900)"
-            stroke={colors.stroke}
-            strokeOpacity={0.6}
-            strokeWidth={0.8}
-            strokeDasharray="2 1.5"
+        />
+
+        {region && collapsedCount !== undefined ? (
+          <RegionText
+            rect={rect}
+            region={region}
+            parts={collapsedCount}
+            lod={lod}
+            colors={colors}
           />
-          <text
-            x={isContainer ? 12 : 9.5}
-            y={8.2}
-            textAnchor="middle"
-            fontSize={7}
-            fontFamily="var(--font-mono)"
-            fill={colors.text}
-            letterSpacing="0.04em"
+        ) : (
+          <NodeText
+            {...{ rect, label, caption, level, shape, plate, step, lod, colors, isContainer }}
+            hasGlyph={Boolean(glyph)}
+          />
+        )}
+
+        {glyph && lod !== 'overview' && !isContainer && <g pointerEvents="none">{glyph}</g>}
+
+        {provenance === 'hotspot' && lod !== 'overview' && level !== 'frame' && rect.w >= 50 && (
+          <g
+            transform={
+              isContainer
+                ? `translate(${rect.w - 30} 8)`
+                : `translate(${rect.w - 23} ${rect.h - 15})`
+            }
+            pointerEvents="none"
           >
-            HS
-          </text>
-        </g>
-      )}
+            <rect
+              width={isContainer ? 24 : 19}
+              height={11}
+              rx={2}
+              fill="var(--color-ink-900)"
+              stroke={colors.stroke}
+              strokeOpacity={0.6}
+              strokeWidth={0.8}
+              strokeDasharray="2 1.5"
+            />
+            <text
+              x={isContainer ? 12 : 9.5}
+              y={8.2}
+              textAnchor="middle"
+              fontSize={7}
+              fontFamily="var(--font-mono)"
+              fill={colors.text}
+              letterSpacing="0.04em"
+            >
+              HS
+            </text>
+          </g>
+        )}
 
-      {state && (
-        <g transform={`translate(${rect.w - 9} 9)`} pointerEvents="none">
-          <circle r={8} fill="var(--color-ink-900)" stroke={stateColor} strokeWidth={1.4} />
-          <text y={3.4} textAnchor="middle" fontSize={9} fontWeight={700} fill={stateColor}>
-            {STATE_GLYPH[state]}
-          </text>
-        </g>
-      )}
+        {state && (
+          <g transform={`translate(${rect.w - 9} 9)`} pointerEvents="none">
+            <circle r={8} fill="var(--color-ink-900)" stroke={stateColor} strokeWidth={1.4} />
+            <text y={3.4} textAnchor="middle" fontSize={9} fontWeight={700} fill={stateColor}>
+              {STATE_GLYPH[state]}
+            </text>
+          </g>
+        )}
 
-      {collapsedCount !== undefined && !region && (
-        <g transform={`translate(${rect.w - 44} ${rect.h - 20})`} pointerEvents="none">
-          <rect
-            width={36}
-            height={14}
-            rx={7}
-            fill="var(--color-ink-700)"
-            stroke={colors.stroke}
-            strokeWidth={0.8}
-          />
-          <text
-            x={18}
-            y={10.2}
-            textAnchor="middle"
-            fontSize={8.5}
-            fontFamily="var(--font-mono)"
-            fill={colors.text}
-          >
-            +{collapsedCount}
-          </text>
-        </g>
-      )}
+        {collapsedCount !== undefined && !region && (
+          <g transform={`translate(${rect.w - 44} ${rect.h - 20})`} pointerEvents="none">
+            <rect
+              width={36}
+              height={14}
+              rx={7}
+              fill="var(--color-ink-700)"
+              stroke={colors.stroke}
+              strokeWidth={0.8}
+            />
+            <text
+              x={18}
+              y={10.2}
+              textAnchor="middle"
+              fontSize={8.5}
+              fontFamily="var(--font-mono)"
+              fill={colors.text}
+            >
+              +{collapsedCount}
+            </text>
+          </g>
+        )}
 
-      {selected && <Reticle w={rect.w} h={rect.h} color={colors.bright} />}
+        {selected && <Reticle w={rect.w} h={rect.h} color={colors.bright} />}
 
-      {showPart && part !== undefined && (
-        <g pointerEvents="none">
-          <line
-            x1={-2}
-            y1={-2}
-            x2={-12}
-            y2={-12}
-            stroke="var(--color-fg-subtle)"
-            strokeWidth={0.8}
-          />
-          <circle
-            cx={-18}
-            cy={-18}
-            r={9}
-            fill="var(--color-ink-900)"
-            stroke="var(--color-fg-subtle)"
-            strokeWidth={0.9}
-          />
-          <text
-            x={-18}
-            y={-14.6}
-            textAnchor="middle"
-            fontSize={8.5}
-            fontFamily="var(--font-mono)"
-            fill="var(--color-fg)"
-          >
-            {part}
-          </text>
-        </g>
-      )}
+        {showPart && part !== undefined && (
+          <g pointerEvents="none">
+            <line
+              x1={-2}
+              y1={-2}
+              x2={-12}
+              y2={-12}
+              stroke="var(--color-fg-subtle)"
+              strokeWidth={0.8}
+            />
+            <circle
+              cx={-18}
+              cy={-18}
+              r={9}
+              fill="var(--color-ink-900)"
+              stroke="var(--color-fg-subtle)"
+              strokeWidth={0.9}
+            />
+            <text
+              x={-18}
+              y={-14.6}
+              textAnchor="middle"
+              fontSize={8.5}
+              fontFamily="var(--font-mono)"
+              fill="var(--color-fg)"
+            >
+              {part}
+            </text>
+          </g>
+        )}
+      </g>
     </motion.g>
   );
 }
