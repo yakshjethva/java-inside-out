@@ -8,13 +8,16 @@
  * - 404.html is noindex and has no canonical URL;
  * - asset and link URLs stay under the build's base path, and links inside the
  *   prerendered content point at pages that exist;
- * - sitemap.xml and robots.txt exist only in builds served from the site root.
+ * - sitemap.xml and robots.txt exist only in builds served from the site root;
+ * - Three.js is not in the scripts a page loads first, nor in the anatomy
+ *   page's, and the script budgets below hold.
  *
  * Exits with status 1 and a list of problems if any check fails.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import zlib from 'node:zlib';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
@@ -163,6 +166,59 @@ if (BASE_URL === '/') {
 for (const file of ['sw.js', 'favicon.svg', 'site.webmanifest', 'og/jvm-atlas.png'])
   if (!fs.existsSync(path.join(dist, file))) fail(file, 'missing');
 
+/**
+ * Script budgets in gzip bytes. Raise one only with a reason recorded in the
+ * pull request (docs/3D_EXPERIENCE.md lists the current sizes).
+ */
+const BUDGETS = { initialScripts: 125_000, threeChunk: 275_000 };
+const assets = path.join(dist, 'assets');
+const gzipSize = (file) => zlib.gzipSync(fs.readFileSync(path.join(assets, file))).length;
+/** Static imports only: `import(...)` is a lazy chunk and does not count. */
+const staticImports = (file) =>
+  [
+    ...fs
+      .readFileSync(path.join(assets, file), 'utf8')
+      .matchAll(/\bimport\s*(?:[^"';()]*?\bfrom\s*)?["']\.\/([^"']+?\.js)["']/g),
+  ].map((match) => match[1]);
+function closure(roots) {
+  const seen = new Set();
+  const queue = [...roots];
+  while (queue.length) {
+    const file = queue.pop();
+    if (seen.has(file) || !fs.existsSync(path.join(assets, file))) continue;
+    seen.add(file);
+    queue.push(...staticImports(file));
+  }
+  return [...seen];
+}
+const hasThree = (file) =>
+  fs.readFileSync(path.join(assets, file), 'utf8').includes('WebGLRenderer');
+
+const index = read('index.html') ?? '';
+const initial = closure(
+  [
+    ...index.matchAll(
+      /<(?:script type="module"|link rel="modulepreload")[^>]*?(?:src|href)="[^"]*\/assets\/([^"]+\.js)"/g,
+    ),
+  ].map((match) => match[1]),
+);
+if (initial.length === 0) fail('index.html', 'no entry script found');
+const initialBytes = initial.reduce((sum, file) => sum + gzipSize(file), 0);
+if (initial.some(hasThree)) fail('initial scripts', 'include Three.js');
+if (initialBytes > BUDGETS.initialScripts)
+  fail('initial scripts', `${initialBytes} bytes gzip, budget ${BUDGETS.initialScripts}`);
+
+const anatomyPage = fs.readdirSync(assets).find((file) => /^JvmAnatomyPage-.*\.js$/.test(file));
+if (!anatomyPage) fail('assets', 'no JvmAnatomyPage chunk');
+else if (closure([anatomyPage]).some(hasThree))
+  fail(anatomyPage, 'the anatomy page loads Three.js before the 3D viewer is chosen');
+
+const threeChunks = fs.readdirSync(assets).filter((file) => file.endsWith('.js') && hasThree(file));
+if (threeChunks.length === 0) fail('assets', 'no chunk contains the 3D renderer');
+for (const file of threeChunks)
+  if (gzipSize(file) > BUDGETS.threeChunk)
+    fail(file, `${gzipSize(file)} bytes gzip, budget ${BUDGETS.threeChunk}`);
+
 if (problems.length) {
   console.error(`verify-build: ${problems.length} problem(s) in dist/ (base ${BASE_URL}):`);
   for (const problem of problems) console.error(`  - ${problem}`);
@@ -170,5 +226,6 @@ if (problems.length) {
 }
 console.log(
   `verify-build: ${PRERENDER_PATHS.length} pages and 404.html are complete for base ${BASE_URL}` +
-    ` (canonical origin ${SITE_URL})`,
+    ` (canonical origin ${SITE_URL}); initial scripts ${(initialBytes / 1000).toFixed(1)} kB gzip` +
+    ` in ${initial.length} files, 3D chunk ${threeChunks.map((f) => (gzipSize(f) / 1000).toFixed(1)).join(', ')} kB gzip`,
 );

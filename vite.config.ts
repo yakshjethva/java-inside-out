@@ -72,7 +72,7 @@ export default defineConfig(({ isSsrBuild }) => ({
   },
   test: {
     environment: 'jsdom',
-    include: ['tests/unit/**/*.test.{ts,tsx}'],
+    include: ['tests/unit/**/*.test.{ts,tsx}', 'src/**/tests/*.test.{ts,tsx}'],
     setupFiles: ['tests/unit/setup.ts'],
     css: false,
   },
