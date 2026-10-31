@@ -2,8 +2,9 @@
 <!--
   JVM Atlas brand artwork, rendered to PNG by scripts/brand/render-assets.mjs.
   ?kind=og draws the 1200x630 social card; ?kind=icon&size=N draws an app icon.
-  The stack shows the six regions of the JVM explorer as separated slabs: a
-  pedagogical layout, not a picture of memory.
+  The stack shows the explorer's six regions as separated slabs: the five
+  regions of the JVM and, at the bottom, the platform it runs on (dotted in the
+  site, not part of the JVM). A pedagogical layout, not a picture of memory.
 -->
 <html lang="en">
   <head>
@@ -119,13 +120,8 @@
         ['Platform: OS and CPU', 'plat'],
       ];
 
-      function mark(x, y, size) {
-        const g = el('g', { transform: `translate(${x} ${y}) scale(${size / 32})` });
-        el(
-          'rect',
-          { x: 0.5, y: 0.5, width: 31, height: 31, rx: 7.5, fill: '#0f1218', stroke: '#2a303b' },
-          g,
-        );
+      /** The mark's stacked layers on a 32-unit grid, shared by the card's mark and the app icons. */
+      function glyph(g) {
         el('path', { d: 'M7 14.4 16 19.6v8L7 22.4Z', fill: '#4a5466' }, g);
         el('path', { d: 'M25 14.4 16 19.6v8l9-5.2Z', fill: '#2b313d' }, g);
         el('path', { d: 'M7 14.4 16 9.2l9 5.2-9 5.2Z', fill: '#171b23' }, g);
@@ -142,6 +138,16 @@
           },
           g,
         );
+      }
+
+      function mark(x, y, size) {
+        const g = el('g', { transform: `translate(${x} ${y}) scale(${size / 32})` });
+        el(
+          'rect',
+          { x: 0.5, y: 0.5, width: 31, height: 31, rx: 7.5, fill: '#0f1218', stroke: '#2a303b' },
+          g,
+        );
+        glyph(g);
       }
 
       if (kind === 'og') {
@@ -223,23 +229,7 @@
         svg.setAttribute('viewBox', '0 0 32 32');
         // App icons are full-bleed tiles; the platform applies its own mask.
         el('rect', { width: 32, height: 32, fill: '#0f1218' });
-        const g = el('g', { transform: 'translate(3.2 3.2) scale(0.8)' });
-        el('path', { d: 'M7 14.4 16 19.6v8L7 22.4Z', fill: '#4a5466' }, g);
-        el('path', { d: 'M25 14.4 16 19.6v8l9-5.2Z', fill: '#2b313d' }, g);
-        el('path', { d: 'M7 14.4 16 9.2l9 5.2-9 5.2Z', fill: '#171b23' }, g);
-        el('circle', { cx: 16, cy: 16.2, r: 1.8, fill: '#9fd0ff' }, g);
-        el('path', { d: 'M7 8.8 16 3.6l9 5.2-9 5.2Z', fill: '#5c93ec' }, g);
-        el(
-          'path',
-          {
-            d: 'M7 8.8 16 3.6l9 5.2',
-            fill: 'none',
-            stroke: '#cfe2ff',
-            'stroke-width': 0.7,
-            'stroke-linejoin': 'round',
-          },
-          g,
-        );
+        glyph(el('g', { transform: 'translate(3.2 3.2) scale(0.8)' }));
       }
       document.fonts.ready.then(() => {
         document.body.dataset.ready = '1';

@@ -158,8 +158,8 @@ the parts, Look inside and Watch it run; `viewer` is absent for the 2D map. Exis
 must keep working.
 
 Navigation is: Start here, Explore anatomy, Learn, Glossary, References, About; the logo is the
-link home, and the mobile menu adds Home, Contributing and Project status. The footer links every
-page.
+link home, and the mobile menu adds Home, Contributing and Project status. The footer links the
+primary and project pages.
 
 ### Rendering and hydration
 
@@ -383,7 +383,10 @@ Project skills live in `.claude/skills/` and are recorded in `skills-lock.json`.
 Three.js skills (`threejs-r3f`, `threejs-performance`, `threejs-accessibility`, `threejs-assets`,
 `threejs-testing`) come from `cesartevisual/threejs-skills` and were reviewed before installation.
 Install a community skill only after reading it in full, one skill at a time; skills advise, and
-these instructions decide.
+these instructions decide. They are kept exactly as published (the lock records their hashes), so
+where one is broader than this project, these instructions narrow it: `threejs-assets` covers
+model and texture files, which this project does not use (no model files; all geometry is
+generated), so only its guidance on caching and releasing GPU resources applies here.
 
 ## Contributing
 

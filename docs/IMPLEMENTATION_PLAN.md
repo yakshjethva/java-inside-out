@@ -1,6 +1,6 @@
 # JVM Atlas — implementation plan
 
-> Understand Java from the inside out.
+> Explore the machine behind Java programs.
 
 This is the working plan for the project. It is short on purpose: it records the decisions that shape
 the code base, the milestone order, and what "done" means for each milestone. Update it when a
@@ -13,20 +13,24 @@ The repository started with only an MIT `LICENSE` and a one-line `README.md`. Ev
 
 ## 1. Product architecture
 
-JVM Atlas is a **static single-page application**. There is no server, database, account system or
-external API. Everything the learner sees is compiled into the bundle and served by GitHub Pages.
+JVM Atlas is a **static single-page application**, prerendered to HTML for every public route.
+There is no server, database, account system or external API. Everything the learner sees is
+compiled into static files, served from one commit by two hosts: Vercel serves the canonical site
+from the root of `https://jvmatlas.vercel.app`, and GitHub Pages serves a mirror on the project
+subpath (section 7).
 
 ```
 ┌──────────────────────────── browser ────────────────────────────┐
 │  UI & navigation      React Router pages, layout, preferences    │
-│  Visualization        custom SVG anatomy, pan/zoom, inspector    │
+│  Visualization        SVG anatomy, 3D model, inspector           │
 │  Simulation           pure TypeScript step models (no DOM)       │
 │  Content              typed TS data: components, relationships,  │
 │                       glossary, references, scenarios, quizzes   │
 │  Persistence          localStorage (progress, bookmarks, prefs)  │
 └──────────────────────────────────────────────────────────────────┘
-          ▲ static files only (HTML, JS, CSS, fonts, SVG)
-   GitHub Actions ──build──▶ GitHub Pages (project subpath)
+          ▲ static files only (HTML, JS, CSS, fonts, SVG, PNG)
+   Vercel ─────────build──▶ jvmatlas.vercel.app (canonical, site root)
+   GitHub Actions ─build──▶ GitHub Pages (mirror, project subpath)
 ```
 
 The four layers are kept separate so contributors can change one without touching the others:
@@ -277,8 +281,9 @@ mirror at `/jvm-inside-out/`. Both come from the same commit. See
 5. One-time setup by the repository owner: **Settings → Pages → Source: GitHub Actions**, and the
    Vercel project connected to the repository.
 
-Deployment cannot be verified from a pull request. It is verified when the workflows run on `main`
-and the sites respond at `https://jvmatlas.vercel.app` and
+Production deployment cannot be verified from a pull request: a pull request gets a Vercel preview
+deployment and runs every CI step except the Pages deployment. Production is verified when the
+workflows run on `main` and the sites respond at `https://jvmatlas.vercel.app` and
 `https://<owner>.github.io/<repository>/`.
 
 ## 8. Project structure

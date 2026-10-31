@@ -44,8 +44,9 @@ it by hand.
 
 ## Brand artwork
 
-`scripts/brand/artwork.html` draws the social card (1200 × 630, the six regions
-of the JVM as an exploded stack of slabs) and the app icons;
+`scripts/brand/artwork.html` draws the social card (1200 × 630, the explorer's
+six regions as an exploded stack of slabs: the five regions of the JVM and the
+platform beneath them) and the app icons, which share one mark function;
 `node scripts/brand/render-assets.mjs` renders them into `public/og/` and
 `public/icons/`. The artwork is original. The stack is a pedagogical layout, not
 a picture of memory, and the card says nothing the site does not.

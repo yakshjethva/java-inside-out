@@ -90,7 +90,7 @@ title with `usePageTitle` (a unit test checks they match).
 | ---------------------- | --------------------------------------------------------------------------------------------- |
 | `<title>`              | `<Page> · JVM Atlas`; the home page is `JVM Atlas · Explore the machine behind Java programs` |
 | `meta description`     | One or two specific sentences per page                                                        |
-| `link rel=canonical`   | Always on the primary origin, never with a query string or trailing slash                     |
+| `link rel=canonical`   | Primary origin, no query string; non-root paths omit trailing slashes (home is `/`)           |
 | Open Graph and Twitter | Title, description, URL, `og/jvm-atlas.png` (1200 × 630, original artwork)                    |
 | `meta robots`          | `noindex` on the 404 page only                                                                |
 
@@ -131,7 +131,9 @@ Both are written only by builds served from the site root (the Vercel build). Cr
 `robots.txt` only at a host's root, and a sitemap on the mirror would list another host's URLs,
 so the GitHub Pages build has neither. `verify-build.mjs` enforces this.
 
-`sitemap.xml` lists every canonical page; `lastmod` is the date of the last commit.
+`sitemap.xml` lists every canonical page, without `lastmod`: the build has no per-page
+modification date, and one shared date (such as the last commit's) would mark unchanged pages as
+modified on every commit. Add `lastmod` only with a date that is accurate for each page.
 
 `robots.txt` (written by `robots()` in `scripts/prerender.mjs`):
 
@@ -195,7 +197,7 @@ BASE_PATH=/jvm-inside-out/ npm run build && npm run preview:pages
 A local build is not a deployment. After merging, confirm on the live sites:
 
 ```bash
-curl -sI https://jvmatlas.vercel.app/learn/heap-vs-stack
+curl -sS -w '\nHTTP %{http_code}\n' https://jvmatlas.vercel.app/learn/heap-vs-stack | grep -Eo '<title>[^<]*</title>|^HTTP [0-9]+'
 ```
 
 ```bash
@@ -207,12 +209,12 @@ curl -s https://yakshjethva.github.io/jvm-inside-out/start/ | grep -o '<link rel
 ```
 
 ```bash
-curl -sI https://jvmatlas.vercel.app/no-such-page
+curl -sS -w '\nHTTP %{http_code}\n' https://jvmatlas.vercel.app/no-such-page | grep -Eo '<title>[^<]*</title>|^HTTP [0-9]+'
 ```
 
-Expect HTTP 200 with the page's own HTML, the robots rules above, a canonical link on
-`https://jvmatlas.vercel.app` from the mirror, and HTTP 404 (served from `404.html`) for an
-unknown path.
+Expect HTTP 200 with the page's own HTML (its title is `Heap versus stack · JVM Atlas`), the
+robots rules above, a canonical link on `https://jvmatlas.vercel.app` from the mirror, and HTTP 404
+with the `404.html` page (`Page not found · JVM Atlas`) for an unknown path.
 
 ## Adding a page
 

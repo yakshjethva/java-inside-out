@@ -42,10 +42,14 @@ Neutral scale, from the surface (`950`) to the strongest line (`400`):
 | `raised`                      | Lifted surfaces: selected segments, menus |
 | `fg`, `fg-muted`, `fg-subtle` | Primary, secondary and tertiary text      |
 
-Accents are mirrored between surfaces: `-200`/`-300` are text colours, `-400`
-is for icons, focus and strokes, `-500` for filled controls, `-700` for tinted
-borders and `-900` for tinted backgrounds. On paper `text-exec-300` is a deep
-blue; in a case it is a light blue. Both meet WCAG AA on their surface.
+Accents are mirrored between surfaces, and each family defines only the levels
+it needs: `exec` and `rt` have `-200` to `-500`, `-700` and `-900`; `ok` and
+`warn` have `-300` to `-500` and `-900`; `plat` has `-400` and `-500`. Where a
+level exists, `-200`/`-300` are text colours, `-400` is for icons, focus and
+strokes, `-500` for filled controls, `-700` for tinted borders and `-900` for
+tinted backgrounds; add a level to `src/styles/index.css` (on both surfaces)
+before using it. On paper `text-exec-300` is a deep blue; in a case it is a
+light blue. Both meet WCAG AA on their surface.
 
 | Accent | Meaning                                       | Second cue                       |
 | ------ | --------------------------------------------- | -------------------------------- |

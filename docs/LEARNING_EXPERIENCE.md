@@ -46,7 +46,7 @@ JVM Atlas   Start here · Explore anatomy · Learn · Glossary · References · 
   (`/learn`): ten guides and the learning paths, each beginning with a question (the earlier
   address `/paths` still works). **Glossary**, **References** and **About** complete the bar.
 - The mobile menu lists Home, the same six pages, then Contributing, Project status and the
-  source code. The footer links every page.
+  source code. The footer links the primary and project pages.
 - The level control in the header reads "Simple", "Developer" or "Deep dive".
 
 ## 4. Homepage
@@ -66,7 +66,8 @@ The homepage introduces the atlas before it teaches, and every section leads som
 4. **Subsystems:** the seven areas with their component counts and roles.
 5. **Start here:** the first lesson's seven chapters with progress, the **journey machine** (an
    editable line of Java followed through compiler, class file, class loader, memory, execution
-   engine, CPU and output, with real `javac` 25.0.4 bytecode) and the first guides.
+   engine, CPU and operating system, and output, with real `javac` 25.0.4 bytecode) and the first
+   guides.
 6. **Exhibits:** four walkthroughs and two dissections, each with its step count or summary.
 7. **Accuracy:** simple is short, never false; the provenance line styles; the number of primary
    sources.
