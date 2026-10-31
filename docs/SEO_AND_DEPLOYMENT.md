@@ -18,16 +18,19 @@ becomes two deployments. Read this before adding a page, changing metadata or to
 
 `npm run build` runs four steps:
 
-| Step | Command                                                      | Output                                                                                                                                                                          |
-| ---- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | `vite build`                                                 | `dist/`: the client app, `index.html` template, `sw.js`                                                                                                                         |
-| 2    | `vite build --ssr src/entry-server.tsx --outDir dist-server` | `dist-server/entry-server.js`: renders a route to HTML (not deployed)                                                                                                           |
-| 3    | `node scripts/prerender.mjs`                                 | `dist/<route>/index.html` for every public route, `404.html`, and on root builds `sitemap.xml` and `robots.txt`                                                                 |
-| 4    | `node scripts/verify-build.mjs`                              | Fails the build if any page lacks its title, description, single `h1`, canonical URL, JSON-LD or content, if a link points at a missing page, or if a URL escapes the base path |
+| Step | Command                                                      | Output                                                                                                                                                                                                                                                                                                         |
+| ---- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | `vite build`                                                 | `dist/`: the client app, `index.html` template, `sw.js`                                                                                                                                                                                                                                                        |
+| 2    | `vite build --ssr src/entry-server.tsx --outDir dist-server` | `dist-server/entry-server.js`: renders a route to HTML (not deployed)                                                                                                                                                                                                                                          |
+| 3    | `node scripts/prerender.mjs`                                 | `dist/<route>/index.html` for every public route, `404.html`, and on root builds `sitemap.xml` and `robots.txt`                                                                                                                                                                                                |
+| 4    | `node scripts/verify-build.mjs`                              | Fails the build if any page lacks its title, description, single `h1`, canonical URL, JSON-LD or content, if a link points at a missing page, if a URL escapes the base path, if Three.js reaches the first-load scripts, the anatomy page or the service worker's precache, or if a script budget is exceeded |
 
 `src/entry-server.tsx` renders with React Router's static handler and `react-dom/static`
-`prerender`, so the HTML is exactly what the app renders for that URL. `src/main.tsx` loads the
-lazy route modules for the current URL first, then **hydrates** the prerendered HTML.
+`prerender`, so the HTML is exactly what the app renders for that URL. Each page carries the
+stylesheet inline and requests the app's entry module only after its first paint, so the first
+paint waits for the HTML alone. `src/main.tsx` then loads the lazy route modules for the current
+URL and **hydrates** the prerendered HTML; `App` marks `<html data-hydrated>` when it has taken
+over (the browser tests wait for it).
 
 A page rendered for a different URL must not be hydrated: `/anatomy?c=heap` is served the HTML
 of `/anatomy`, and on GitHub Pages every unknown path is served `404.html`. The prerender script
@@ -40,7 +43,41 @@ blank. Without JavaScript the script does not run and the prerendered page is re
 Code that reads browser state (`localStorage`, `matchMedia`, `IntersectionObserver`) must give
 the server render and the first client render the same result: `useSyncExternalStore` stores
 return their defaults on the server snapshot, and components that depend on stored state
-(the explorer tour, a finished chapter) sync after mounting.
+(a finished chapter) sync after mounting. Where that would move content, CSS decides instead: the
+explorer tour is prerendered in both placements (over the map from 640 px, under it on phones),
+and the inline head script marks a learner who dismissed it, so it is never shown.
+
+## Performance
+
+Measured on this branch with Lighthouse 13.5.0 against the root build served by
+`scripts/serve-pages.mjs` (which gzips text, as the hosts do), in this container's headless
+Chromium. Mobile is Lighthouse's default simulation (slow 4G, 4× CPU slowdown), median of three
+runs; desktop is one run with the desktop preset. Lab results, not field data:
+
+| Page                  | Mobile LCP | Mobile TBT | Mobile CLS | Desktop LCP | Desktop CLS |
+| --------------------- | ---------- | ---------- | ---------- | ----------- | ----------- |
+| Home                  | 2.26 s     | 201 ms     | 0.001      | 0.60 s      | 0.001       |
+| Start here            | 2.41 s     | 206 ms     | 0.001      | 0.61 s      | 0.001       |
+| Learn                 | 2.42 s     | 233 ms     | 0.020      | 0.53 s      | 0.001       |
+| Guide (heap vs stack) | 2.41 s     | 558 ms     | 0.001      | 0.53 s      | 0.001       |
+| Explore anatomy       | 2.41 s     | 868 ms     | 0.000      | 0.65 s      | 0.000       |
+| Glossary              | 2.56 s     | 326 ms     | 0.001      | 0.57 s      | 0.001       |
+| References            | 2.11 s     | 156 ms     | 0.002      | 0.49 s      | 0.002       |
+
+Lighthouse category scores in the same runs: mobile performance 74–95, accessibility 96–100,
+best practices 100, SEO 100; desktop performance 99–100, accessibility 100, best practices 100,
+SEO 100. The glossary's mobile accessibility score (96) comes from target-size measurements of
+terms far below the fold that the browser has not laid out yet (`content-visibility`); scrolled
+into view, nothing covers them.
+
+Targets are LCP ≤ 2.5 s, CLS ≤ 0.1 and INP ≤ 200 ms. INP needs real interactions and is not
+measured here; TBT is its lab proxy, and hydration of the explorer and the guides is the largest
+remaining cost on slow devices. The glossary's mobile LCP (2.56 s) is just above the target.
+
+Script budgets (gzip), enforced by `verify-build`: initial scripts 125 kB (112.1 kB now), 3D chunk
+275 kB (253.3 kB now). Other pages are prefetched one at a time after load, never with Save-Data
+or on 2G; the service worker precaches every bundle except the 3D viewer, which is cached the
+first time a reader opens it.
 
 ## Metadata
 

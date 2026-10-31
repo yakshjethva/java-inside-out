@@ -99,6 +99,10 @@ CDNs; fonts come from `@fontsource-variable/*`.
 Animate `transform` and `opacity` only. Reduced motion (the OS setting or the
 in-app preference) keeps every state reachable without movement.
 
+Overlays (menus, popovers, tooltips, the legend, the tour card) are solid
+surfaces with `shadow-overlay`: no translucency, no backdrop blur. A popover
+never runs past the bottom of the screen; a tall one scrolls inside itself.
+
 ## States and focus
 
 Every interactive element has hover, focus-visible, active and disabled states.
@@ -110,20 +114,22 @@ alone. Pressed toggles expose `aria-pressed`.
 
 Reuse these instead of re-implementing behaviour:
 
-| Need                  | Component                                                       |
-| --------------------- | --------------------------------------------------------------- |
-| Buttons and links     | `Button`, `ButtonLink`, `IconButton` (`components/ui`)          |
-| Tabs, toggles, levels | `SegmentedControl`, `LevelSwitch`                               |
-| Tooltips and popovers | `Popover`, `GlossaryTerm`                                       |
-| Menus and drawers     | Header `MoreMenu` and the mobile menu (`SiteHeader`)            |
-| Inspector panels      | `ComponentInspector`                                            |
-| Search                | `ComponentSearch`, glossary search                              |
-| Disclosure            | `<details>` styled as in the inspector and lessons              |
-| Loading, error, empty | `PageLoading`, `RouteError`, empty messages in lists and search |
-| Keyboard shortcuts    | `Kbd` and the explorer's keyboard help                          |
-| Viewer controls       | `AnatomyCanvas` controls, `StepControls`, `MapToggle`           |
-| Exhibits and code     | `ExhibitFrame`, `CodeBlock`, `AccuracyNote`                     |
-| Checks and teach-back | `KnowledgeCheck`, `TeachBack`                                   |
+| Need                  | Component                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| Buttons and links     | `Button`, `ButtonLink`, `IconButton` (`components/ui`)                                            |
+| Tabs, toggles, levels | `SegmentedControl`, `LevelSwitch`                                                                 |
+| Tooltips and popovers | `Popover`, `GlossaryTerm`                                                                         |
+| Menus and drawers     | The mobile menu (`SiteHeader`), the explorer's component list                                     |
+| Inspector panels      | `ComponentInspector`                                                                              |
+| Search                | `ComponentSearch`, glossary search                                                                |
+| Disclosure            | `<details>` styled as in the inspector and lessons                                                |
+| Loading, error, empty | `PageLoading`, `RouteError`, empty messages in lists and search                                   |
+| Keyboard shortcuts    | `Kbd` and the explorer's keyboard help                                                            |
+| Viewer controls       | `AnatomyCanvas` controls, the 3D viewer's camera buttons and toolbar, `StepControls`, `MapToggle` |
+| Section headings      | `SectionHeading` on the home page: number, label, serif title                                     |
+| Machine drawings      | `HeroMachine` (SVG drawn from content, HTML labels over it)                                       |
+| Exhibits and code     | `ExhibitFrame`, `CodeBlock`, `AccuracyNote`                                                       |
+| Checks and teach-back | `KnowledgeCheck`, `TeachBack`                                                                     |
 
 A new primitive is added only when two or more places need it, and it is
 documented here.
@@ -134,3 +140,16 @@ Semantic HTML first; one `h1` per page; every control has an accessible name;
 everything works with a keyboard; contrast meets WCAG AA on both surfaces; no
 information is carried by colour or animation alone; dialogs, menus and drawers
 manage focus and close with Escape.
+
+- Targets are at least 24 × 24 px, including text links in lists; links inside
+  sentences are underlined.
+- Scrollable regions (code blocks, outputs) are focusable so a keyboard can
+  scroll them.
+- No page scrolls sideways at 360 px: long identifiers and paths wrap
+  (`overflow-wrap: anywhere`), inline code may break across lines, fieldsets can
+  shrink, and centred containers in `<main>` keep full width.
+- Nothing moves after the first paint: anything that depends on the browser is
+  prerendered in a stable form or placed by CSS.
+- `tests/e2e/a11y.spec.ts` runs axe-core's WCAG 2.2 A and AA rules on every kind
+  of page, desktop and mobile; keyboard, focus and reduced-motion behaviour have
+  their own browser tests.
