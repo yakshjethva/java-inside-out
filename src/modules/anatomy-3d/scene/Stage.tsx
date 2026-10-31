@@ -28,10 +28,8 @@ export function Stage({ palette, reduced }: { palette: Palette; reduced: boolean
       scene.environment = null;
       target.dispose();
       generator.dispose();
-      room.traverse((object) => {
-        const mesh = object as { geometry?: { dispose(): void } };
-        mesh.geometry?.dispose();
-      });
+      // Releases the room's geometries and materials.
+      room.dispose();
     };
   }, [get, palette, reduced]);
 

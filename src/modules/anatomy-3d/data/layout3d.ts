@@ -92,8 +92,8 @@ export function caseHeight(area: ComponentId): number {
 
 /**
  * Which parts are drawn. The overview shows each area closed, except the one
- * holding the selection; isolating keeps the selected part, the parts that
- * contain it and the parts inside it.
+ * holding the selection and any inside an isolated part; isolating keeps the
+ * selected part, the parts that contain it and the parts inside it.
  */
 export function visibleIds({
   overview,
@@ -105,14 +105,21 @@ export function visibleIds({
   isolate: boolean;
 }): Set<ComponentId> {
   const openArea = selectedId ? areaOf(selectedId) : null;
+  const isolating = isolate && selectedId !== null;
   return new Set(
     COMPONENT_IDS.filter((id) => {
       if (overview) {
         const area = areaOf(id);
-        if (area && area !== id && area !== openArea) return false;
+        // Closed, unless it holds the selection or lies inside an isolated part.
+        if (area && area !== id) {
+          const open =
+            area === openArea ||
+            (isolating && (area === selectedId || isAncestor(selectedId!, area)));
+          if (!open) return false;
+        }
       }
-      if (isolate && selectedId)
-        return id === selectedId || isAncestor(id, selectedId) || isAncestor(selectedId, id);
+      if (isolating)
+        return id === selectedId || isAncestor(id, selectedId!) || isAncestor(selectedId!, id);
       return true;
     }),
   );

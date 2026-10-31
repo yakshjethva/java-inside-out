@@ -44,7 +44,7 @@ import { Stage } from '../scene/Stage';
 export interface Anatomy3DProps {
   selectedId: ComponentId | null;
   mode: 'anatomy' | 'exploded' | 'execution';
-  /** The six-region overview: areas drawn closed except the one holding the selection. */
+  /** The seven-area overview: areas drawn closed except the one holding the selection. */
   overview: boolean;
   execution: ExecutionOverlay | null;
   /** In a walkthrough, the camera follows the parts of the current step. */
@@ -125,7 +125,7 @@ function Viewer({
   const [seenSelection, setSeenSelection] = useState(selectedId);
   if (selectedId !== seenSelection) {
     setSeenSelection(selectedId);
-    if (!selectedId) setIsolate(false);
+    setIsolate(false);
     setAnnouncement(selectionAnnouncement(selectedId));
   }
 
@@ -157,6 +157,9 @@ function Viewer({
     }
     return result;
   }, [visible]);
+
+  // A part that is no longer drawn cannot stay hovered.
+  if (hovered && !visible.has(hovered)) setHovered(null);
 
   const lookOf = useCallback(
     (id: ComponentId): PartLook => {
@@ -236,12 +239,14 @@ function Viewer({
     else pendingFrame.current = { center, radius };
   }, []);
 
-  // The camera frames the selection, or a walkthrough step's parts while following.
+  // The camera frames the selection, or a walkthrough step's parts while following;
+  // a part hidden by a layer is not framed (there would be nothing to see).
   const focusIds = useMemo(() => {
-    if (execution) return follow ? [...execution.active] : [];
-    return selectedId ? [selectedId] : [];
-  }, [execution, follow, selectedId]);
-  const focusKey = execution ? `${execution.key}:${follow}` : (selectedId ?? '');
+    const ids = execution ? (follow ? [...execution.active] : []) : selectedId ? [selectedId] : [];
+    return ids.filter((id) => visible.has(id));
+  }, [execution, follow, selectedId, visible]);
+  const focusKey =
+    (execution ? `${execution.key}:${follow}` : (selectedId ?? '')) + `:${focusIds.length}`;
   useEffect(() => {
     if (focusIds.length > 0) frame(focusIds);
     // Only when the subject changes, not on every list identity change.
@@ -278,7 +283,7 @@ function Viewer({
           tabIndex={0}
           className="absolute inset-0 outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--color-exec-400)]"
           onKeyDown={(event) => {
-            const handled = handleViewerKey(event.key, cameraRef.current, {
+            const handled = handleViewerKey(event, cameraRef.current, {
               frameSelection: () => (selectedId ? frame([selectedId]) : cameraRef.current?.reset()),
               clearSelection: () => onSelect(null),
             });
@@ -409,7 +414,7 @@ function Viewer({
             max={100}
             step={5}
             value={Math.round(explode * 100)}
-            onChange={(event) => setExplode(Number(event.target.value) / 100)}
+            onChange={(event) => setExplodeTo(Number(event.target.value) / 100)}
             onPointerUp={() => setAnnouncement(explodeAnnouncement(explode))}
             onKeyUp={() => setAnnouncement(explodeAnnouncement(explode))}
             aria-valuetext={`${Math.round(explode * 100)} percent apart`}

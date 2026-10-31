@@ -110,6 +110,14 @@ describe('areas', () => {
     expect(isolated.has('method-area')).toBe(false);
     expect(isolated.has('interpreter')).toBe(false);
   });
+
+  it('keeps everything inside an isolated part open in the overview', () => {
+    const jvm = visibleIds({ overview: true, selectedId: 'jvm', isolate: true });
+    for (const id of ['runtime-data-areas', 'heap', 'eden', 'interpreter', 'jni'])
+      expect(jvm.has(id as ComponentId), id).toBe(true);
+    expect(jvm.has('cpu')).toBe(false);
+    expect(jvm.has('javac')).toBe(false);
+  });
 });
 
 describe('arcs and framing', () => {

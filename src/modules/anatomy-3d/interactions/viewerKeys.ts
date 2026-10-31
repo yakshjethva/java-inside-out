@@ -5,15 +5,16 @@ const STEP = Math.PI / 12;
 /**
  * Keyboard shortcuts while the 3D model has focus: arrows orbit, + and − zoom,
  * 0 or Home resets the view, F frames the selection, Escape clears it.
+ * Keys with Ctrl, Cmd or Alt are left to the browser (zoom, Find, …).
  * Returns true when the key was handled.
  */
 export function handleViewerKey(
-  key: string,
+  event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>,
   camera: CameraApi | null,
   actions: { frameSelection: () => void; clearSelection: () => void },
 ): boolean {
-  if (!camera) return false;
-  switch (key) {
+  if (!camera || event.ctrlKey || event.metaKey || event.altKey) return false;
+  switch (event.key) {
     case 'ArrowLeft':
       camera.rotate(-STEP, 0);
       return true;

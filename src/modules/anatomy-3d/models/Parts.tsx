@@ -64,6 +64,11 @@ export function Parts({
     get().invalidate();
   }, [explode, visible, closed, lookOf, get]);
 
+  // A hovered part that disappears never receives pointer-out: reset the cursor.
+  useEffect(() => {
+    get().gl.domElement.style.cursor = '';
+  }, [visible, get]);
+
   useFrame((_, delta) => {
     const target = explode;
     if (Math.abs(shown.current - target) < 0.001) {

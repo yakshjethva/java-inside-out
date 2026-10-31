@@ -53,9 +53,17 @@ describe('3D keyboard shortcuts', () => {
     clearSelection: () => calls.push('clear'),
   };
 
+  const key = (name: string, modifiers: Partial<KeyboardEvent> = {}) => ({
+    key: name,
+    ctrlKey: false,
+    metaKey: false,
+    altKey: false,
+    ...modifiers,
+  });
+
   it('orbit, zoom, reset, frame and clear; other keys are left alone', () => {
-    for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', '+', '-', '0', 'f', 'Escape'])
-      expect(handleViewerKey(key, camera, actions), key).toBe(true);
+    for (const name of ['ArrowLeft', 'ArrowRight', 'ArrowUp', '+', '-', '0', 'f', 'Escape'])
+      expect(handleViewerKey(key(name), camera, actions), name).toBe(true);
     expect(calls).toEqual([
       'rotate -1 0',
       'rotate 1 0',
@@ -66,9 +74,18 @@ describe('3D keyboard shortcuts', () => {
       'frame selection',
       'clear',
     ]);
-    expect(handleViewerKey('Tab', camera, actions)).toBe(false);
-    expect(handleViewerKey('a', camera, actions)).toBe(false);
-    expect(handleViewerKey('ArrowLeft', null, actions)).toBe(false);
+    expect(handleViewerKey(key('Tab'), camera, actions)).toBe(false);
+    expect(handleViewerKey(key('a'), camera, actions)).toBe(false);
+    expect(handleViewerKey(key('ArrowLeft'), null, actions)).toBe(false);
+  });
+
+  it('leaves browser shortcuts alone: Ctrl or Cmd with 0, +, − or F, and Alt combinations', () => {
+    const before = calls.length;
+    expect(handleViewerKey(key('0', { ctrlKey: true }), camera, actions)).toBe(false);
+    expect(handleViewerKey(key('+', { metaKey: true }), camera, actions)).toBe(false);
+    expect(handleViewerKey(key('f', { ctrlKey: true }), camera, actions)).toBe(false);
+    expect(handleViewerKey(key('ArrowLeft', { altKey: true }), camera, actions)).toBe(false);
+    expect(calls).toHaveLength(before);
   });
 });
 

@@ -83,7 +83,9 @@ export function LabelProjector({
       point.project(camera);
       const x = ((point.x + 1) / 2) * size.width;
       const y = ((1 - point.y) / 2) * size.height;
-      const onScreen = point.z < 1 && x > -40 && x < size.width + 40 && y > 0 && y < size.height;
+      // Inside the camera's view volume: between the near and far planes, and on screen.
+      const onScreen =
+        point.z > -1 && point.z < 1 && x > -40 && x < size.width + 40 && y > 0 && y < size.height;
       element.style.visibility = onScreen ? 'visible' : 'hidden';
       element.style.transform = `translate(${x.toFixed(1)}px, ${(y - 6).toFixed(1)}px) translate(-50%, -100%)`;
     }

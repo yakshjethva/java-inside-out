@@ -60,11 +60,17 @@ export function CameraRig({
     camera.position.copy(HOME_TARGET).add(new Vector3().setFromSpherical(HOME));
     orbit.update();
     const onChange = () => invalidate();
+    // A drag or zoom by the learner takes over from any automatic camera move.
+    const onStart = () => {
+      tween.current = null;
+    };
     orbit.addEventListener('change', onChange);
+    orbit.addEventListener('start', onStart);
     controlsRef.current = orbit;
     invalidate();
     return () => {
       orbit.removeEventListener('change', onChange);
+      orbit.removeEventListener('start', onStart);
       orbit.dispose();
       controlsRef.current = null;
     };
@@ -75,7 +81,16 @@ export function CameraRig({
     if (!controls) return;
     controls.enableDamping = !reducedMotion;
     controls.dampingFactor = 0.12;
-  }, [reducedMotion]);
+    // Reduced motion switched on mid-move: finish the move at once.
+    const move = tween.current;
+    if (reducedMotion && move) {
+      tween.current = null;
+      controls.target.copy(move.toTarget);
+      get().camera.position.copy(move.toPosition);
+      controls.update();
+      get().invalidate();
+    }
+  }, [reducedMotion, get]);
 
   useEffect(() => {
     const { camera: base, invalidate } = get();
