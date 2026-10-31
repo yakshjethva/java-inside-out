@@ -5,32 +5,53 @@ const SITE = 'https://jvmatlas.vercel.app';
 test.describe('prerendered pages without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
-  const pages: [path: string, canonical: string, heading: string, text: RegExp][] = [
-    ['./', '/', 'Explore the machine behind every Java program.', /Start with the basics/],
-    ['start', '/start', 'What happens when you run a Java program?', /The compiler/],
-    ['learn', '/learn', 'Start with a question', /What is bytecode\?/],
-    ['paths', '/learn', 'Start with a question', /What is bytecode\?/],
+  const pages: [path: string, canonical: string, title: string, heading: string, text: RegExp][] = [
+    [
+      './',
+      '/',
+      'JVM Atlas · Explore the machine behind Java programs',
+      'Explore the machine behind every Java program.',
+      /Start with the basics/,
+    ],
+    [
+      'start',
+      '/start',
+      'Start here · JVM Atlas',
+      'What happens when you run a Java program?',
+      /The compiler/,
+    ],
+    ['learn', '/learn', 'Learn · JVM Atlas', 'Start with a question', /What is bytecode\?/],
+    ['paths', '/learn', 'Learn · JVM Atlas', 'Start with a question', /What is bytecode\?/],
     [
       'learn/heap-vs-stack',
       '/learn/heap-vs-stack',
+      'Heap versus stack · JVM Atlas',
       'What is the difference between the heap and the stack?',
       /Picture it/,
     ],
-    ['anatomy', '/anatomy', 'Explore the JVM', /Class loading/],
-    ['glossary', '/glossary', 'Glossary', /Bytecode/],
-    ['references', '/references', 'References', /Java Virtual Machine Specification/],
+    ['anatomy', '/anatomy', 'JVM anatomy · JVM Atlas', 'Explore the JVM', /Class loading/],
+    ['glossary', '/glossary', 'Glossary · JVM Atlas', 'Glossary', /Bytecode/],
+    [
+      'references',
+      '/references',
+      'References · JVM Atlas',
+      'References',
+      /Java Virtual Machine Specification/,
+    ],
     [
       'about',
       '/about',
+      'About · JVM Atlas',
       "Don't memorize the JVM. Explore it.",
       /not affiliated with or endorsed by Oracle/,
     ],
   ];
 
-  for (const [path, canonical, heading, text] of pages)
+  for (const [path, canonical, title, heading, text] of pages)
     test(`${path} has its content, title and canonical URL in the HTML`, async ({ page }) => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);
+      await expect(page).toHaveTitle(title);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
       await expect(page.locator('main')).toContainText(text);
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', SITE + canonical);
@@ -45,6 +66,7 @@ test.describe('prerendered pages without JavaScript', () => {
   test('the 404 page tells search engines not to index it', async ({ page }) => {
     const response = await page.goto('no/such/page');
     expect(response?.status()).toBe(404);
+    await expect(page).toHaveTitle('Page not found · JVM Atlas');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
   });

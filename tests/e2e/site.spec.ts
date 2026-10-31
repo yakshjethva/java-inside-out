@@ -48,7 +48,7 @@ test.describe('GitHub Pages deployment', () => {
     });
     await expect(areas.getByRole('link')).toHaveCount(7);
     await expect(areas.getByRole('link', { name: /Class loading/ })).toBeVisible();
-    await expect(page.getByRole('figure', { name: /Follow one line of Java/ })).toBeAttached();
+    await expect(page.getByRole('figure', { name: /Follow one line of Java/ })).toBeVisible();
 
     await page.waitForLoadState('networkidle');
     expect(outside).toEqual([]);

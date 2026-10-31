@@ -11,14 +11,18 @@ export { expect } from '@playwright/test';
 export const test = base.extend({
   page: async ({ page, javaScriptEnabled }, provide) => {
     if (javaScriptEnabled !== false) {
-      const settled = (target: Page) =>
-        target
-          .waitForFunction(() => document.documentElement.hasAttribute('data-hydrated'), null, {
-            timeout: 15_000,
-          })
-          .catch(() => {
-            // Not an app page (or it failed to load): the test's own checks report it.
-          });
+      // Every page the tests open is an app page, so a page that never hydrates fails.
+      const settled = async (target: Page) => {
+        try {
+          await target.waitForFunction(
+            () => document.documentElement.hasAttribute('data-hydrated'),
+            null,
+            { timeout: 15_000 },
+          );
+        } catch {
+          throw new Error(`The app did not take over ${target.url()} within 15 s`);
+        }
+      };
       const goto = page.goto.bind(page);
       const reload = page.reload.bind(page);
       page.goto = async (...args: Parameters<Page['goto']>) => {

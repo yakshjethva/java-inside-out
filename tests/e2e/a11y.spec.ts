@@ -4,14 +4,13 @@ import { expect, test } from './fixtures';
 const axePath = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
 /**
- * Automated WCAG 2.2 A and AA checks (axe-core) on every kind of page. Two
- * exclusions, both verified by hand:
- *  - label-content-name-mismatch is an experimental axe rule. The 2D plate's
- *    parts are buttons whose names start with their visible label and add
- *    context (provenance, state), which that rule cannot tell apart.
- *  - On the glossary, target-size is measured for terms far below the fold,
- *    which the browser has not laid out yet (content-visibility); scrolled into
- *    view, nothing covers them.
+ * Automated WCAG 2.2 A and AA checks (axe-core) on every kind of page.
+ *  - label-content-name-mismatch, an experimental axe rule, is turned off only
+ *    on pages that draw the 2D plate: its parts are buttons whose names start
+ *    with their visible label and add context (provenance, state), which that
+ *    rule cannot tell apart.
+ *  - The glossary lays out its long list lazily (content-visibility); the
+ *    check lays everything out first, so targets are measured where they are.
  */
 const pages = [
   './',
@@ -46,8 +45,9 @@ test.describe('automated accessibility checks', () => {
       });
       await page.goto(path);
       await page.waitForLoadState('networkidle');
+      await page.addStyleTag({ content: '* { content-visibility: visible !important; }' });
       await page.addScriptTag({ path: axePath });
-      const violations = await page.evaluate(async (glossary) => {
+      const violations = await page.evaluate(async () => {
         const axe = (
           window as unknown as {
             axe: {
@@ -61,15 +61,16 @@ test.describe('automated accessibility checks', () => {
             values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'],
           },
           rules: {
-            'label-content-name-mismatch': { enabled: false },
-            ...(glossary ? { 'target-size': { enabled: false } } : {}),
+            'label-content-name-mismatch': {
+              enabled: document.querySelector('[data-node]') === null,
+            },
           },
         });
         return (result.violations as { id: string; nodes: { target: string[] }[] }[]).map(
           (violation) =>
             `${violation.id}: ${violation.nodes.map((n) => n.target.join(' ')).join(', ')}`,
         );
-      }, path === 'glossary');
+      });
       expect(violations).toEqual([]);
     });
 });
