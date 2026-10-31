@@ -357,6 +357,11 @@
   .code-surface {
     overflow-x: auto;
   }
+  /* The case clips anything outside it, so these focus rings sit inside. */
+  .code-surface:focus-visible,
+  .code-output:focus-visible {
+    outline-offset: -2px;
+  }
   .code-surface pre {
     margin: 0;
     padding: 0.9rem 1rem;

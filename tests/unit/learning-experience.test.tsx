@@ -143,6 +143,16 @@ describe('the site header', () => {
     expect(screen.queryByRole('navigation', { name: 'Mobile' })).not.toBeInTheDocument();
   });
 
+  it('closes the mobile menu with Escape and returns focus to its button', async () => {
+    const user = userEvent.setup();
+    renderAt(<SiteHeader />);
+    await user.click(screen.getByRole('button', { name: 'Open menu' }));
+    expect(screen.getByRole('navigation', { name: 'Mobile' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('navigation', { name: 'Mobile' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open menu' })).toHaveFocus();
+  });
+
   it('shows the explanation level in plain words', () => {
     preferencesStore.set((p) => ({ ...p, level: 'deep' }));
     renderAt(<SiteHeader />);

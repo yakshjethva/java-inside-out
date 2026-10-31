@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router';
 import { descendantCount, getComponentDoc } from '@/content/jvm';
 import { ATLAS_AREAS, type JvmRegion } from '@/content/jvm/regions';
@@ -116,16 +116,22 @@ export function HeroMachine({ className }: { className?: string }) {
             );
           })}
         </svg>
-        <ol aria-label="The areas of the atlas, from source code to processor">
+        {/* Beside the drawing from 19rem; on very narrow screens, a list below it. */}
+        <ol
+          aria-label="The areas of the atlas, from source code to processor"
+          className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 @[19rem]:mt-0 @[19rem]:block"
+        >
           {SLABS.map((slab, index) => (
             <li
               key={slab.area.id}
-              className="absolute -translate-y-1/2"
-              style={{
-                left: `${(LABEL_X / VIEW) * 100}%`,
-                top: `${(slab.anchor[1] / VIEW) * 100}%`,
-                maxWidth: `${((VIEW - LABEL_X) / VIEW) * 100}%`,
-              }}
+              className="@[19rem]:absolute @[19rem]:top-[var(--label-top)] @[19rem]:left-[var(--label-left)] @[19rem]:max-w-[var(--label-max)] @[19rem]:-translate-y-1/2"
+              style={
+                {
+                  '--label-left': `${(LABEL_X / VIEW) * 100}%`,
+                  '--label-top': `${(slab.anchor[1] / VIEW) * 100}%`,
+                  '--label-max': `${((VIEW - LABEL_X) / VIEW) * 100}%`,
+                } as CSSProperties
+              }
             >
               <Link
                 to={`/anatomy?c=${slab.area.id}`}
@@ -141,7 +147,7 @@ export function HeroMachine({ className }: { className?: string }) {
                 </span>
                 <span className="hidden text-[12px] text-fg-subtle @[26rem]:block">
                   {descendantCount(slab.area.id)}
-                  {descendantCount(slab.area.id) === 1 ? ' component' : ' components'}
+                  {descendantCount(slab.area.id) === 1 ? ' part inside' : ' parts inside'}
                 </span>
               </Link>
             </li>

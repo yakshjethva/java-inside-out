@@ -160,7 +160,7 @@ export function CodeBlock({
             // Focusable so a keyboard can scroll long lines.
             // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
             tabIndex={0}
-            className="overflow-x-auto px-3 pt-1 pb-3 text-[12px] leading-relaxed text-ok-300"
+            className="code-output overflow-x-auto px-3 pt-1 pb-3 text-[12px] leading-relaxed text-ok-300"
           >
             {output}
           </pre>

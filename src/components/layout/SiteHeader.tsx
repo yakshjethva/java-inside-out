@@ -1,5 +1,5 @@
 import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import { PRIMARY_NAV, PROJECT_NAV, SITE } from '@/data/site';
 import { cn } from '@/lib/cn';
@@ -12,6 +12,19 @@ export function SiteHeader() {
   const here = location.pathname + location.hash;
   const [openOn, setOpenOn] = useState<string | null>(null);
   const menuOpen = openOn === here;
+  const menuButton = useRef<HTMLButtonElement>(null);
+
+  // Escape closes the menu and returns focus to its button.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpenOn(null);
+      menuButton.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [menuOpen]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-700 bg-ink-950">
@@ -53,6 +66,7 @@ export function SiteHeader() {
             Source<span className="sr-only"> code on GitHub (opens in a new tab)</span>
           </a>
           <button
+            ref={menuButton}
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded-md text-fg-muted hover:bg-ink-750 hover:text-fg lg:hidden"
             aria-expanded={menuOpen}

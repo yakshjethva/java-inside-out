@@ -191,7 +191,7 @@ export function HomePage() {
             </p>
             <ul className="mt-6 space-y-2.5 text-[16px]">
               <li>
-                <Link to="/anatomy" className={linkClass}>
+                <Link to="/anatomy?view=overview" className={linkClass}>
                   Start from the six regions <ArrowRight size={14} aria-hidden />
                 </Link>
               </li>
@@ -299,7 +299,7 @@ export function HomePage() {
                           {area.title}
                         </span>
                         <span className="text-[13px] text-fg-subtle">
-                          {descendantCount(area.id)} components
+                          {descendantCount(area.id)} parts inside
                           {outside && ' · outside the JVM'}
                         </span>
                       </span>

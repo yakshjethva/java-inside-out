@@ -1,4 +1,4 @@
-import { ArrowRight, Compass, Map as MapIcon, PlayCircle } from 'lucide-react';
+import { ArrowRight, ChevronRight, Compass, Map as MapIcon, PlayCircle } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { CodeBlock } from '@/components/code/CodeBlock';
 import { RichText } from '@/components/learning/RichText';
@@ -209,7 +209,12 @@ function ComponentSection({ doc, heading }: { doc: ComponentDoc; heading?: strin
       )}
 
       <details className="group mt-6 max-w-[44rem] rounded-xl border border-ink-600">
-        <summary className="cursor-pointer list-none rounded-xl px-4 py-3 text-[15.5px] font-medium text-fg hover:bg-ink-900 [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 text-[15.5px] font-medium text-fg hover:bg-ink-900 [&::-webkit-details-marker]:hidden">
+          <ChevronRight
+            size={16}
+            aria-hidden
+            className="shrink-0 text-fg-subtle transition-transform group-open:rotate-90"
+          />
           Deep dive: the specification and HotSpot in detail
         </summary>
         <div className="space-y-5 border-t border-ink-700 px-4 py-5">
