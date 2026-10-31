@@ -46,7 +46,7 @@ export const GLOSSARY_ENTRIES: GlossaryEntry[] = [
     whyItExists:
       'People need a language they can read and reason about; machines need precise instructions. Source code is the human side of that translation.',
     related: ['javac', 'class-file', 'bytecode'],
-    references: [{ source: 'jls-12.1' }, { source: 'jep-330' }],
+    references: [{ source: 'jep-330' }],
   },
   {
     id: 'machine-code',

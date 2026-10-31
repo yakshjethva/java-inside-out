@@ -150,6 +150,11 @@ export function AnatomyExplorer() {
     setTourStep(null);
     preferenceActions.dismiss(TOUR_ID);
   };
+  // The tour points at the map, which "Look inside" replaces, so it opens on the map.
+  const openTour = () => {
+    if (mode === 'internal') state.setMode('anatomy');
+    setTourStep(0);
+  };
 
   // The overview shows the six main parts; the region holding the selection is opened.
   const view = state.view ?? preferences.mapView;
@@ -396,7 +401,7 @@ export function AnatomyExplorer() {
         overview={overview}
         onSelect={navigate}
         onFullMap={() => setView('full')}
-        onTour={() => setTourStep(0)}
+        onTour={openTour}
       />
     );
 
@@ -433,7 +438,7 @@ export function AnatomyExplorer() {
           <ComponentSearch onSelect={(id) => navigate(id)} />
           <ToolbarButton
             pressed={tourStep !== null}
-            onClick={() => (tourStep === null ? setTourStep(0) : closeTour())}
+            onClick={() => (tourStep === null ? openTour() : closeTour())}
             icon={<Compass size={15} aria-hidden />}
           >
             Guided tour

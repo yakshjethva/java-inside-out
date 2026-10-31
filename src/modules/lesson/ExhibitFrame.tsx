@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn';
 /**
  * The dark "exhibit case" that holds an interactive model of part of the JVM.
  * The caption is a live region: when the learner acts, it says what changed.
+ * The accuracy note shares the figcaption but is not announced on every change.
  */
 export function ExhibitFrame({
   title,
@@ -30,13 +31,13 @@ export function ExhibitFrame({
         {controls}
       </div>
       <div className="mt-3">{children}</div>
-      <figcaption
-        aria-live="polite"
-        className="mt-4 min-h-[3em] border-t border-ink-700 pt-3 text-[15px] leading-relaxed text-fg"
-      >
-        {caption}
+      {/* One figcaption, last in the figure: the live caption, then the accuracy note. */}
+      <figcaption className="mt-4 border-t border-ink-700 pt-3">
+        <div aria-live="polite" className="min-h-[3em] text-[15px] leading-relaxed text-fg">
+          {caption}
+        </div>
+        {note && <AccuracyNote compact text={note} className="mt-3 bg-ink-900/80" />}
       </figcaption>
-      {note && <AccuracyNote compact text={note} className="mt-3 bg-ink-900/80" />}
     </figure>
   );
 }

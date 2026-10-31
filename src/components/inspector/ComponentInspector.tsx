@@ -317,7 +317,7 @@ export function ComponentInspector({
             quiz={{ id: `check:${doc.id}`, title: doc.name, questions: [doc.check] }}
           />
         ) : (
-          <TeachBackMini doc={doc} />
+          <TeachBackMini key={doc.id} doc={doc} />
         )}
       </Section>
 

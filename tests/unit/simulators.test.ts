@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SCENARIOS } from '@/content/jvm/scenarios';
 import { helloClassSize, modifiedUtf8Length, sanitizeMessage } from '@/simulators/journey';
 import { stepDuration } from '@/simulators/playback';
 import {
@@ -42,6 +43,10 @@ describe('journey: Hello.class', () => {
     expect(sanitizeMessage('x'.repeat(50))).toHaveLength(32);
     expect([...sanitizeMessage('👋'.repeat(40))]).toHaveLength(32);
   });
+
+  it('drops bidirectional control characters, which could reorder the code on screen', () => {
+    expect(sanitizeMessage('a\u202Eb\u2066c\u200Fd')).toBe('abcd');
+  });
 });
 
 describe('playback timing', () => {
@@ -52,6 +57,15 @@ describe('playback timing', () => {
 });
 
 describe('tiering: a method becoming hot', () => {
+  it('shows PrintCompilation lines exactly as JDK 25.0.4 printed them', () => {
+    const captured = SCENARIOS.find((s) => s.id === 'jit')!
+      .listings.find((l) => l.id === 'print-compilation')!
+      .code.split('\n');
+    const { events } = callMethod(INITIAL_TIERING, 6000);
+    expect(events).toHaveLength(3);
+    for (const event of events) expect(captured).toContain(event.log);
+  });
+
   it('starts in the interpreter', () => {
     expect(INITIAL_TIERING).toMatchObject({ calls: 0, tier: 0, events: [] });
     expect(callMethod(INITIAL_TIERING, 199).tier).toBe(0);

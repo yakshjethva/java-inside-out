@@ -98,8 +98,9 @@ stored locally. The chapter is reflected in the URL (`/start?chapter=memory`).
 
 - **Default view: the six main parts.** The same plate, with each subsystem collapsed into a
   large region labelled in plain words (Class loading, Memory, Execution engine, Garbage
-  collection, Native interface, Platform) and a one-line description. Selecting a region expands
-  it and opens its explanation; selecting a part inside keeps it expanded.
+  collection, Native interface, Platform) and a one-line description. The build-time tools that
+  run before the JVM appear as a seventh, smaller region, "Before it runs". Selecting a region
+  expands it and opens its explanation; selecting a part inside keeps it expanded.
 - **"Show the full JVM map"** reveals all 66 components and their connections. The choice is
   remembered in this browser and reflected in the URL (`view=full`). Deep links such as
   `/anatomy?c=eden` open the region that contains the component.

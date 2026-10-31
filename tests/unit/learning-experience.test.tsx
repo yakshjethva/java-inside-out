@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { preferencesStore, progressStore } from '@/hooks/useLearningState';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { FIRST_RUN } from '@/content/lesson/firstRun';
+import { progressActions } from '@/hooks/useLearningState';
+import { HomePage } from '@/pages/HomePage';
+import { LearningPathsPage } from '@/pages/LearningPathsPage';
 import { JourneyMachine } from '@/modules/journey/JourneyMachine';
 import { StartHerePage } from '@/pages/StartHerePage';
 import indexHtml from '../../index.html?raw';
@@ -20,6 +24,12 @@ beforeEach(() => {
 });
 
 describe('Start here', () => {
+  it('does not count a visit to the recap as starting the lesson', () => {
+    progressActions.completeChapter(FIRST_RUN.id, 'recap');
+    renderAt(<StartHerePage />, '/start');
+    expect(screen.getByRole('link', { name: /Start chapter 1/ })).toBeInTheDocument();
+  });
+
   it('introduces the lesson and lists its seven chapters', () => {
     renderAt(<StartHerePage />, '/start');
     expect(
@@ -80,9 +90,27 @@ describe('the journey machine', () => {
     expect(input).toHaveValue('Hi there');
     await user.click(screen.getByRole('button', { name: '2. Class file' }));
     // 404 bytes plus the 8 bytes of "Hi there", measured with javac 25.0.4.
-    expect(screen.getByText(/412 bytes of bytecode/)).toBeInTheDocument();
+    expect(screen.getByText(/a file of 412 bytes/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '7. Output' }));
     expect(screen.getByText(/produced a result: "Hi there"/)).toBeInTheDocument();
+  });
+
+  it('plays again from the first station when Run again is pressed during playback', async () => {
+    const user = userEvent.setup();
+    renderAt(<JourneyMachine />);
+    await user.click(screen.getByRole('button', { name: 'Run it' }));
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Run again' }));
+    expect(screen.getByText('1 of 7 · Compiler')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
+  });
+
+  it('calls the class file’s size the size of the whole file', async () => {
+    const user = userEvent.setup();
+    renderAt(<JourneyMachine />);
+    await user.click(screen.getByRole('button', { name: '2. Class file' }));
+    expect(screen.getByText(/a file of 410 bytes/)).toBeInTheDocument();
+    expect(screen.queryByText(/bytes of bytecode/)).not.toBeInTheDocument();
   });
 });
 
@@ -129,5 +157,56 @@ describe('page titles', () => {
   it('name the page first everywhere else', () => {
     render(<Titled title="Glossary" />);
     expect(document.title).toBe('Glossary · Inside Java');
+  });
+});
+
+const finishLesson = () => {
+  for (const chapter of FIRST_RUN.chapters)
+    progressActions.completeChapter(FIRST_RUN.id, chapter.id);
+};
+
+describe('returning learners', () => {
+  it('Learn sends a learner who finished the lesson to the recap', () => {
+    finishLesson();
+    renderAt(<LearningPathsPage />, '/paths');
+    expect(screen.getByRole('link', { name: 'Review what you learned' })).toHaveAttribute(
+      'href',
+      '/start?chapter=recap',
+    );
+  });
+
+  it('the homepage sends a learner who finished the lesson to the recap', () => {
+    finishLesson();
+    renderAt(<HomePage />);
+    expect(screen.getByRole('link', { name: /Review what you now know/ })).toHaveAttribute(
+      'href',
+      '/start?chapter=recap',
+    );
+  });
+
+  it('Learn and the homepage list the parts explored most recently', () => {
+    progressActions.markExplored(
+      { key: 'anatomy:eden', title: 'Eden', href: '/anatomy?c=eden' },
+      'eden',
+    );
+    const learn = renderAt(<LearningPathsPage />, '/paths');
+    const list = screen.getByRole('list', { name: 'Recently explored' });
+    expect(within(list).getByRole('link', { name: 'Eden' })).toHaveAttribute(
+      'href',
+      '/anatomy?c=eden',
+    );
+    learn.unmount();
+    renderAt(<HomePage />);
+    expect(
+      within(screen.getByRole('list', { name: 'Recently explored' })).getByRole('link', {
+        name: 'Eden',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('Learn gives every section its own anchor', () => {
+    const { container } = renderAt(<LearningPathsPage />, '/paths');
+    const ids = [...container.querySelectorAll('[id]')].map((element) => element.id);
+    expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
   });
 });

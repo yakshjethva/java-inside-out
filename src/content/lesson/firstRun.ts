@@ -223,7 +223,7 @@ export const FIRST_RUN: Lesson = {
             text: 'A program for your exact processor, like a .exe file.',
             correct: false,
             feedback:
-              'Some languages work that way. `javac` does not: it writes bytecode for the JVM, and the same class file runs on any computer that has a JVM.',
+              'Some languages work that way. `javac` does not: it writes bytecode for the JVM, and the same class file runs on any computer whose JVM is recent enough for it (Java 25 or newer for this file).',
           },
           {
             id: 'nothing',
@@ -236,7 +236,7 @@ export const FIRST_RUN: Lesson = {
       },
       explanation: {
         simple:
-          'The **compiler** is a program called [[javac]]. It reads your source code, checks it for mistakes, and writes a new file: `Hello.class`.\n\nA [[class-file|class file]] is not text you write. It holds [[bytecode|bytecode]]: a compact list of instructions meant for the Java Virtual Machine, not for your processor. That is why the same class file can run on Windows, macOS or Linux, on any computer with a JVM.',
+          'The **compiler** is a program called [[javac]]. It reads your source code, checks it for mistakes, and writes a new file: `Hello.class`.\n\nA [[class-file|class file]] is not text you write. It holds [[bytecode|bytecode]]: a compact list of instructions meant for the Java Virtual Machine, not for your processor. That is why the same class file can run on Windows, macOS or Linux, on any computer with a recent enough JVM (Java 25 or newer for this file).',
         developer:
           '`javac Hello.java` writes `Hello.class`: 410 bytes for this program with javac 25.0.4. `javap -c Hello` disassembles it, and `main` turns out to be four instructions: `getstatic` loads `System.out`, `ldc` pushes the string constant, `invokevirtual` calls `println`, and `return` ends the method.\n\nCompile errors, such as a missing semicolon or an unknown name, stop here, before any JVM is involved.',
         deep: "JVMS §4.1: a class file begins with the magic number `0xCAFEBABE`, then the minor and major version (`0` and `69` for Java SE 25), then the [[constant-pool|constant pool]] (28 entries here), access flags, this class and its superclass, fields, methods and attributes. Each method's `Code` attribute holds its bytecode. `ldc #13` refers to constant-pool entry 13, a `CONSTANT_String` whose text lives in a `CONSTANT_Utf8` entry in modified UTF-8 (JVMS §4.4). That is why this class file is 404 bytes plus the length of the message.",
@@ -404,7 +404,7 @@ export const FIRST_RUN: Lesson = {
           "Before any of your code runs, the JVM has to find your class and get it ready. The [[class-loader|class loader]] finds `Hello.class` and reads it. Then the JVM [[linking|links]] it: it checks that the bytecode is safe and prepares space for the class's data. Finally it [[initialization|initializes]] the class by running its setup code. Only then does `main` start.",
         developer:
           '`java Hello` hands the name `Hello` to the application class loader, which searches the class path (`-cp`; by default, the current directory). If the file is not there, the JVM stops with `Error: Could not find or load main class Hello`, caused by `java.lang.ClassNotFoundException`.\n\nYour other classes are loaded lazily in the same way: `Person` is loaded only when code first needs it, for example at the first `new Person(...)`. Run `java -Xlog:class+load Hello` to see every class as it is loaded: 428 of them for this one-line program, almost all from the JDK.',
-        deep: 'JVMS chapter 5. **Loading** (§5.3) finds the class file and creates the class; the application class loader first delegates to its parents (platform, then bootstrap). **Linking** (§5.4) is [[verification|verification]] (§4.10, type checking with the `StackMapTable`), [[preparation|preparation]] (static fields get default values) and [[resolution|resolution]] of symbolic references, which the specification allows to happen lazily: HotSpot resolves each constant-pool entry the first time an instruction uses it. **Initialization** (§5.5) runs the static initializer `<clinit>`, triggered by the first `new`, static method call or static field access; for the main class, by the launcher invoking `main`. HotSpot keeps class metadata in Metaspace, its implementation of the method area.',
+        deep: 'JVMS chapter 5. **Loading** (§5.3) finds the class file and creates the class; the application class loader first delegates to its parents (platform, then bootstrap). **Linking** (§5.4) is [[verification|verification]] (§4.10, type checking with the `StackMapTable`), [[preparation|preparation]] (static fields get default values) and [[resolution|resolution]] of symbolic references, which the specification allows to happen lazily: HotSpot resolves each constant-pool entry the first time an instruction uses it. **Initialization** (§5.5) runs the static initializer `<clinit>`, triggered by the first `new`, `getstatic`, `putstatic` or `invokestatic` that refers to the class (reading a compile-time constant does not count: `javac` copies its value into the code); for the main class, by the launcher invoking `main`. HotSpot keeps class metadata in Metaspace, its implementation of the method area.',
       },
       term: {
         glossaryId: 'class-loader',
@@ -457,7 +457,7 @@ export const FIRST_RUN: Lesson = {
       title: 'Memory',
       question: 'When your program creates an object, where does it go?',
       takeaway:
-        'Objects live in the heap; each method call gets a frame on its thread’s stack; variables hold references.',
+        'Objects live in the heap; each method call gets a frame on its thread’s stack; a variable such as `person` holds a reference to its object, not the object itself.',
       minutes: 4,
       exhibit: 'memory',
       component: 'runtime-data-areas',
@@ -501,7 +501,7 @@ export const FIRST_RUN: Lesson = {
         definition: 'A value the JVM uses to find an object. A variable of a class type holds one.',
       },
       tryIt:
-        'Step through the five instructions. Select any part of the picture (the frame, a variable, an object) to see what it is.',
+        'Step through the bytecode: the instructions in `main` that create the object and store its reference, and two inside the constructor. Select any part of the picture (the frame, a variable, an object) to see what it is.',
       check: {
         id: 'memory-check',
         kind: 'memory-state',

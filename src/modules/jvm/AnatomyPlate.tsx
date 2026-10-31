@@ -237,7 +237,7 @@ export function AnatomyPlate({
         glyph={
           node.container ? null : glyphFor(id, node.rect, execution ? execution.frame : undefined)
         }
-        ariaLabel={`${words.join(', ')}. ${toPlainText(doc.summary)}`}
+        ariaLabel={`${words.join(', ')}. ${region ? region.blurb : toPlainText(doc.summary)}`}
         tabIndex={id === rovingId ? 0 : -1}
         animate={animate}
         onSelect={() => onSelect(id)}

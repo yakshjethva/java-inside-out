@@ -170,7 +170,12 @@ export function ExecutionExhibit() {
             <code translate="no" className="font-mono">
               -XX:+PrintCompilation
             </code>{' '}
-            printed (real lines from JDK 25.0.4)
+            printed for{' '}
+            <code translate="no" className="font-mono">
+              square
+            </code>{' '}
+            (JDK 25.0.4; the first column is milliseconds since start, and timings and compile ids
+            vary)
           </p>
           <pre
             translate="no"

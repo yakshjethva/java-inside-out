@@ -46,17 +46,17 @@ export function callMethod(state: TieringState, count: number): TieringState {
     events.push({
       kind: 'tier3',
       atCall: TIER3_CALLS,
-      log: '11       3       Hot::square (4 bytes)',
+      log: '38   11       3       Hot::square (4 bytes)',
     });
   }
   if (tier === 3 && calls >= TIER4_AT) {
     tier = 4;
     events.push(
-      { kind: 'tier4', atCall: TIER4_AT, log: '12       4       Hot::square (4 bytes)' },
+      { kind: 'tier4', atCall: TIER4_AT, log: '38   12       4       Hot::square (4 bytes)' },
       {
         kind: 'retired',
         atCall: TIER4_AT,
-        log: '11       3       Hot::square (4 bytes)   made not entrant: not used',
+        log: '38   11       3       Hot::square (4 bytes)   made not entrant: not used',
       },
     );
   }

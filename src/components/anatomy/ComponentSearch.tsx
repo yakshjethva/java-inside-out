@@ -69,12 +69,13 @@ export function ComponentSearch({ onSelect }: { onSelect: (id: ComponentId) => v
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown') {
               event.preventDefault();
-              setOpen(true);
-              setActive((i) => Math.min(i + 1, Math.max(0, results.length - 1)));
+              // A closed list opens on the current suggestion; an open one moves down.
+              if (!expanded) setOpen(true);
+              else setActive((i) => Math.min(i + 1, Math.max(0, results.length - 1)));
             } else if (event.key === 'ArrowUp') {
               event.preventDefault();
               setActive((i) => Math.max(i - 1, 0));
-            } else if (event.key === 'Enter') {
+            } else if (event.key === 'Enter' && expanded) {
               const hit = results[active];
               if (hit) {
                 event.preventDefault();

@@ -34,6 +34,13 @@ const TONE: Record<Tone, { dot: string; on: string; text: string }> = {
   ok: { dot: 'border-ok-500', on: 'bg-ok-500 border-ok-300', text: 'text-ok-300' },
 };
 
+/** Narrows javap's column padding, but never inside the `//` comment, which quotes the visitor's text. */
+const compactColumns = (line: string) => {
+  const comment = line.indexOf('//');
+  const code = comment < 0 ? line : line.slice(0, comment);
+  return code.replace(/ {2,}/g, '  ') + (comment < 0 ? '' : line.slice(comment));
+};
+
 const Mono = ({ children }: { children: ReactNode }) => (
   <pre
     translate="no"
@@ -61,11 +68,11 @@ const STATIONS: Station[] = [
     chapter: 'compiler',
     tone: 'plat',
     says: (m) =>
-      `It writes \`Hello.class\`: ${helloClassSize(m)} bytes of bytecode, instructions for the JVM rather than for your processor. Your text is stored in it as a constant.`,
+      `It writes \`Hello.class\`, a file of ${helloClassSize(m)} bytes. It holds bytecode, instructions for the JVM rather than for your processor, and your text, stored as a constant.`,
     evidence: (m) => (
       <Mono>
         {'Hello.class  CA FE BA BE 00 00 00 45 …\n'}
-        <span className="text-ok-300">{helloMainBytecode(m)[1]!.replace(/ {2,}/g, '  ')}</span>
+        <span className="text-ok-300">{compactColumns(helloMainBytecode(m)[1]!)}</span>
       </Mono>
     ),
   },
@@ -165,8 +172,7 @@ export function JourneyMachine({ className }: { className?: string }) {
 
   const run = () => {
     setStarted(true);
-    stepper.reset();
-    stepper.togglePlay();
+    stepper.play(0);
   };
 
   return (

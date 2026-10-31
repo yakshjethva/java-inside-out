@@ -73,7 +73,8 @@ Content is plain TypeScript data with a small inline syntax, so it stays readabl
 - `[label](https://…)` for an external link (HTTPS only);
 - a blank line starts a new paragraph; lines starting with `- ` form a list.
 
-Every explanation exists at three levels that describe the same machine:
+Explanations are written at three levels that describe the same machine. Core concepts need all
+three; other content may leave out `developer` until someone writes it:
 
 - `simple`: assumes no programming knowledge. Short sentences, familiar examples, one new term
   at a time. Short, but never false: no "primitives live on the stack" or "objects are freed

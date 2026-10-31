@@ -36,8 +36,9 @@ export function AboutPage() {
           <p>
             Inside Java starts with a question a beginner already has, follows one small program
             through the machine, and then lets you take the machine apart. Every part is selectable,
-            connected and dissected, explained at three levels (simple, developer and deep dive),
-            and every walkthrough uses real output from a real JDK.
+            connected and dissected, explained simply and in depth (with a developer level for the
+            core concepts and the first lesson), and every walkthrough uses real output from a real
+            JDK.
           </p>
         </Block>
         <Block title="Versions">

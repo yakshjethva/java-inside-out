@@ -57,5 +57,7 @@ export function usePlayback({
     reset: () => apply(playback.reset(current)),
     seek: (target: number) => apply(playback.seek(current, target)),
     togglePlay: () => apply(playback.togglePlay(current)),
+    /** Plays from `from` (default: the current step), whatever the current state. */
+    play: (from = step) => apply({ step: from, total, playing: true }),
   };
 }

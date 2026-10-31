@@ -20,9 +20,13 @@ export const HELLO_CLASS_BASE_SIZE = 404;
 /**
  * Keeps text that can sit inside a Java string literal unescaped: no quotes,
  * no backslashes, no control characters, at most 32 characters (code points).
+ * Bidirectional controls are dropped too, so the text cannot reorder the code
+ * shown around it.
  */
 export function sanitizeMessage(input: string): string {
-  const allowed = [...input].filter((ch) => ch !== '"' && ch !== '\\' && !/\p{Cc}/u.test(ch));
+  const allowed = [...input].filter(
+    (ch) => ch !== '"' && ch !== '\\' && !/[\p{Cc}\p{Bidi_Control}]/u.test(ch),
+  );
   return allowed.slice(0, MAX_MESSAGE_LENGTH).join('');
 }
 

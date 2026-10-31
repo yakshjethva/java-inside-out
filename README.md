@@ -21,9 +21,12 @@ reshapes them into a beginner-first learning experience. See
 [`docs/LEARNING_EXPERIENCE.md`](docs/LEARNING_EXPERIENCE.md) for how the site teaches and
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) for the architecture and roadmap.
 
-- **Homepage:** the journey machine. Type a line of Java, press _Run it_ and follow it through
-  the compiler, the class file, the class loader, memory, the execution engine and the CPU to
-  the output. The class-file size and bytecode are real `javac` 25.0.4 output for your line.
+- **Homepage:** the journey machine. Edit the message in `System.out.println("…")`, press
+  _Run it_ and follow the program through the compiler, the class file, the class loader,
+  memory, the execution engine and the CPU to the output. The bytecode is real `javac` 25.0.4
+  output for this program, in which your message changes only the string constant; the
+  class-file size is 404 bytes plus the message's length in modified UTF-8, which matches
+  `javac` 25.0.4.
 - **Start here** (`/start`): the guided first lesson, "What happens when you run a Java
   program?", in seven short chapters (your first program, the compiler, the JVM, loading
   classes, memory, execution, garbage collection) and a recap.
@@ -167,8 +170,9 @@ slash) and unknown paths still load the app, with status 404.
 ### Offline use
 
 A small service worker (`src/sw/service-worker.js`, registered in production builds only)
-precaches the built files after the first visit. Pages are fetched from the network first, so a
-new deployment shows up immediately, and fall back to the cached copy when you are offline.
+precaches the app shell, scripts, styles and Latin fonts after the first visit, and caches anything
+else the first time it is fetched. Pages are fetched from the network first, so a new deployment
+shows up immediately, and fall back to the cached copy when you are offline.
 
 ## Project structure
 

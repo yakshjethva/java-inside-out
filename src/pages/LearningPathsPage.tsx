@@ -2,6 +2,7 @@ import {
   ArrowRight,
   Bookmark,
   Check,
+  Clock3,
   Map as MapIcon,
   Microscope,
   Play,
@@ -68,7 +69,13 @@ export function LearningPathsPage() {
               {FIRST_RUN.summary}
             </p>
             <ButtonLink
-              to={chaptersDone && next ? `/start?chapter=${next.id}` : '/start'}
+              to={
+                chaptersDone === 0
+                  ? '/start'
+                  : next
+                    ? `/start?chapter=${next.id}`
+                    : '/start?chapter=recap'
+              }
               variant="primary"
               size="lg"
               className="mt-6"
@@ -164,6 +171,28 @@ export function LearningPathsPage() {
               </ul>
             </div>
           )}
+          {progress.recent.length > 0 && (
+            <div className="mt-6">
+              <p
+                id="recently-explored"
+                className="flex items-center gap-1.5 text-[14px] text-fg-muted"
+              >
+                <Clock3 size={14} aria-hidden /> Recently explored
+              </p>
+              <ul aria-labelledby="recently-explored" className="mt-2 flex flex-wrap gap-2">
+                {progress.recent.map((item) => (
+                  <li key={item.key}>
+                    <Link
+                      to={item.href}
+                      className="inline-block rounded-md border border-ink-600 px-2.5 py-1 text-[13.5px] text-fg-muted hover:border-exec-400 hover:text-fg"
+                    >
+                      {item.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
 
         {/* The full curriculum, for reference */}
@@ -212,7 +241,10 @@ export function LearningPathsPage() {
 
 function QuestionCard({ path, number }: { path: QuestionPath; number: number }) {
   return (
-    <li id={path.id} className="scroll-mt-20 rounded-xl border border-ink-600 bg-ink-900/40 p-5">
+    <li
+      id={`question-${path.id}`}
+      className="scroll-mt-20 rounded-xl border border-ink-600 bg-ink-900/40 p-5"
+    >
       <p className="font-mono text-[12.5px] text-fg-subtle">{number}</p>
       <h3 className="mt-1 font-serif text-[23px] leading-snug text-fg">{path.question}</h3>
       <p className="mt-2 text-[15px] leading-relaxed text-fg-muted">

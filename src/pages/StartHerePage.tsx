@@ -59,7 +59,7 @@ export function StartHerePage() {
 
 function LessonIntro({ done }: { done: Record<string, number> }) {
   const next = CHAPTERS.find((chapter) => !(chapter.id in done));
-  const started = Object.keys(done).length > 0;
+  const started = CHAPTERS.some((chapter) => chapter.id in done);
   return (
     <div className="mx-auto w-full max-w-[1180px] px-4 pt-12 pb-20 sm:px-6 lg:pt-20">
       <div className="grid gap-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">

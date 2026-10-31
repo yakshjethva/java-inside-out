@@ -204,25 +204,6 @@ test.describe('JVM explorer: expert tools', () => {
     ).toBeVisible();
   });
 
-  test('the homepage preview shows the whole plate and opens a part in the explorer', async ({
-    page,
-  }) => {
-    await page.goto('./');
-    const preview = page.getByRole('group', { name: 'Interactive preview of the JVM anatomy' });
-    await preview.scrollIntoViewIfNeeded();
-    const codeCache = preview.getByRole('button', { name: /^Code cache, / });
-    await expect(codeCache).toBeVisible();
-    await expect(preview.getByRole('button', { name: /^Interpreter, / })).toBeVisible();
-    await codeCache.click();
-    const card = page.getByRole('status').filter({ hasText: 'Open in the explorer' });
-    await expect(card.getByRole('heading', { name: 'Code cache' })).toBeVisible();
-    await card.getByRole('link', { name: 'Open in the explorer' }).click();
-    await expect(page).toHaveURL(/\/anatomy\?c=code-cache$/);
-    await expect(
-      inspector(page).getByRole('heading', { level: 2, name: 'Code cache', exact: true }),
-    ).toBeVisible();
-  });
-
   test('the inspector opens the lesson’s interactive model of a core concept', async ({ page }) => {
     await openExplorer(page, 'anatomy?c=heap');
     const panel = inspector(page);
@@ -256,7 +237,11 @@ test.describe('JVM explorer: expert tools', () => {
 
   test('the full map on the home page opens a component in the explorer', async ({ page }) => {
     await openExplorer(page, './');
-    await plateNode(page, 'Interpreter').click();
+    const preview = page.getByRole('group', { name: 'Interactive preview of the JVM anatomy' });
+    // The preview mounts only as its section comes near the viewport.
+    await expect(preview).toHaveCount(0);
+    await page.getByRole('heading', { name: 'Already write Java?' }).scrollIntoViewIfNeeded();
+    await preview.getByRole('button', { name: /^Interpreter, / }).click();
     await page.getByRole('link', { name: 'Open in the explorer' }).click();
     await expect(page).toHaveURL(/\/anatomy\/?\?c=interpreter$/);
     await expect(

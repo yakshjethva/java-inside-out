@@ -2,10 +2,12 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useState } from 'react';
+import { ComponentSearch } from '@/components/anatomy/ComponentSearch';
 import { ComponentTree, type TreeItem } from '@/components/anatomy/ComponentTree';
 import { ComponentInspector } from '@/components/inspector/ComponentInspector';
 import { KnowledgeCheck } from '@/components/learning/KnowledgeCheck';
-import { getComponentDoc } from '@/content/jvm';
+import { getComponentDoc, type ComponentId } from '@/content/jvm';
 import { ANATOMY_QUIZ } from '@/content/jvm/quiz';
 import { relationshipsOf } from '@/content/jvm/relationships';
 import { preferencesStore, progressStore } from '@/hooks/useLearningState';
@@ -119,6 +121,56 @@ describe('ComponentInspector', () => {
     expect(
       screen.getByText(/developer explanation for this has not been written yet/),
     ).toBeInTheDocument();
+  });
+});
+
+describe('ComponentInspector between components', () => {
+  function Switcher() {
+    const [id, setId] = useState<ComponentId>('eden');
+    return (
+      <>
+        <button type="button" onClick={() => setId('survivor')}>
+          Next component
+        </button>
+        <ComponentInspector
+          doc={getComponentDoc(id)}
+          ancestry={[]}
+          parts={[]}
+          outgoing={[]}
+          incoming={[]}
+          level="simple"
+          onLevelChange={() => {}}
+          onNavigate={() => {}}
+          bookmarked={false}
+          onToggleBookmark={() => {}}
+          understood={false}
+          onToggleUnderstood={() => {}}
+        />
+      </>
+    );
+  }
+
+  it('starts a fresh teach-back for each component', async () => {
+    const user = userEvent.setup();
+    renderInRouter(<Switcher />);
+    const answer = () => screen.getByRole('textbox', { name: /In your own words/ });
+    await user.type(answer(), 'Where new objects start');
+    await user.click(screen.getByRole('button', { name: 'Next component' }));
+    expect(screen.getByRole('heading', { level: 2, name: 'Survivor space' })).toBeInTheDocument();
+    expect(answer()).toHaveValue('');
+  });
+});
+
+describe('ComponentSearch', () => {
+  it('does not choose a suggestion the learner dismissed with Escape', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(<ComponentSearch onSelect={onSelect} />);
+    await user.type(screen.getByRole('combobox', { name: 'Find a component' }), 'heap');
+    await user.keyboard('{Escape}{Enter}');
+    expect(onSelect).not.toHaveBeenCalled();
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(onSelect).toHaveBeenCalledWith('heap');
   });
 });
 
@@ -265,6 +317,27 @@ describe('JVM anatomy page', () => {
     expect(
       screen.queryByRole('region', { name: 'Guided tour of the explorer' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('opens the guided tour on the map from any view', async () => {
+    const user = userEvent.setup();
+    preferencesStore.set((p) => ({ ...p, dismissed: { 'explorer-tour': 1 } }));
+    const { router } = renderInRouter(<JvmAnatomyPage />, '/anatomy?mode=internal&c=heap');
+    // jsdom applies no CSS, so the button's visible and screen-reader labels both count here.
+    await user.click((await screen.findAllByRole('button', { name: /^Guided tour/ }))[0]!);
+    expect(
+      await screen.findByRole('region', { name: 'Guided tour of the explorer' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.search).not.toContain('mode=internal');
+  });
+
+  it('reads each region’s plain-language description to screen readers', async () => {
+    renderInRouter(<JvmAnatomyPage />, '/anatomy');
+    expect(
+      await screen.findByRole('button', {
+        name: /^Memory \(Runtime data areas\).*Stores objects and runtime data\.$/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('opens the execution walkthrough and steps forward', async () => {

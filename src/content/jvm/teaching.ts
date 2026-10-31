@@ -58,7 +58,7 @@ export const TEACHING: Partial<Record<ComponentId, Teaching>> = {
 
   'class-loader-subsystem': {
     developer:
-      'Classes are loaded on demand. `java -cp out app.Main` makes the application class loader look for `app/Main.class` in `out`; the first `new Plugin()` or `Class.forName("app.Plugin")` loads `Plugin` later. Three built-in loaders work together, bootstrap (core `java.*` classes), platform and application, and each asks its parent first.\n\nTrouble shows up as `ClassNotFoundException` (a class looked up by name was not found) or `NoClassDefFoundError` (typically, a class that was there at compile time is missing at run time). `java -Xlog:class+load -cp out app.Main` lists every class as it is loaded.',
+      'Classes are loaded on demand. `java -cp out app.Main` makes the application class loader look for `app/Main.class` in `out`; the first `new Plugin()` or `Class.forName("app.Plugin")` loads `Plugin` later. Three built-in loaders work together: bootstrap (core `java.*` classes), platform and application. For a class on the class path, the application loader first asks the platform loader, which asks the bootstrap loader; a class in a named module goes straight to the loader of that module.\n\nTrouble shows up as `ClassNotFoundException` (a class looked up by name was not found) or `NoClassDefFoundError` (typically, a class that was there at compile time is missing at run time). `java -Xlog:class+load -cp out app.Main` lists every class as it is loaded.',
     analogy: {
       picture:
         'A library request desk. You ask for a book by its exact title; the librarian first checks with the main collection, finds the copy, checks it is complete, and only then hands it over.',
@@ -66,10 +66,13 @@ export const TEACHING: Partial<Record<ComponentId, Teaching>> = {
         { picture: 'The exact title', real: 'The class’s full name, such as `app.Main`' },
         {
           picture: 'Checking with the main collection first',
-          real: 'Parent delegation: application → platform → bootstrap',
+          real: 'Parent delegation for class-path classes: application → platform → bootstrap',
         },
         { picture: 'Checking the copy is complete', real: 'Verification, part of linking' },
-        { picture: 'Handing it over', real: 'The class is linked and initialized, ready to use' },
+        {
+          picture: 'Handing it over',
+          real: 'The class is loaded and linked; initialization (running its static setup) is a separate step, at its first active use',
+        },
       ],
       limits:
         'The JVM keeps the class once it is loaded instead of handing out copies, and two different loaders can each load a separate class with the same name, which a library does not do. Loading also happens only when code first needs the class.',
@@ -231,7 +234,8 @@ export const TEACHING: Partial<Record<ComponentId, Teaching>> = {
           id: 'two',
           text: 'Two',
           correct: false,
-          explanation: 'Only `new` creates an object. Assigning a variable copies a reference.',
+          explanation:
+            '`new Person()` runs once, so there is one object. Assigning `b = a` copies the reference, not the object.',
         },
         {
           id: 'none',
@@ -463,14 +467,14 @@ export const TEACHING: Partial<Record<ComponentId, Teaching>> = {
 
   'garbage-collector': {
     developer:
-      'You never free memory yourself. When no chain of references from a live thread or a static field leads to an object any more, a later collection reclaims its memory. HotSpot JDK 25 uses G1 by default; `-XX:+UseZGC` selects ZGC for very short pauses, and `java -Xlog:gc` prints every collection.\n\nA memory leak in Java is an object that stays reachable by mistake, for example in a cache that only ever grows.',
+      'You never free memory yourself. When no chain of references from a GC root (a local variable of a running method, a static field, a JNI reference or one of the JVM’s own internal roots) leads to an object any more, a later collection reclaims its memory. HotSpot JDK 25 picks G1 by default on server-class machines and Serial on small ones (for example, with a single CPU); `-XX:+UseZGC` selects ZGC for very short pauses, and `java -Xlog:gc` prints every collection.\n\nA memory leak in Java is an object that stays reachable by mistake, for example in a cache that only ever grows.',
     analogy: {
       picture:
         'Clearing up helium balloons after a party. Balloons whose strings someone is holding stay. Balloons nobody holds, even ones tied to each other, are cleared away when the cleaners come round.',
       mapping: [
         {
           picture: 'People holding strings',
-          real: 'GC roots: local variables in running methods, static fields',
+          real: 'GC roots: local variables of running methods, static fields, JNI references and the JVM’s own internal roots',
         },
         { picture: 'A string', real: 'A reference' },
         { picture: 'A balloon', real: 'An object' },

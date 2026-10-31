@@ -106,7 +106,7 @@ test.describe('the journey machine', () => {
     await machine.getByRole('button', { name: 'Run it' }).click();
     await expect(machine.getByText('1 of 7 · Compiler')).toBeVisible();
     await machine.getByRole('button', { name: '2. Class file' }).click();
-    await expect(machine.getByText(/415 bytes of bytecode/)).toBeVisible();
+    await expect(machine.getByText(/a file of 415 bytes/)).toBeVisible();
     await machine.getByRole('button', { name: '7. Output' }).click();
     await expect(machine.getByText('Hi from Mia', { exact: true })).toBeVisible();
   });

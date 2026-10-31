@@ -1,5 +1,5 @@
-import { ArrowRight, Check } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { ArrowRight, Check, Clock3 } from 'lucide-react';
+import { lazy, Suspense, useCallback, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ButtonLink } from '@/components/ui/Button';
 import { COMPONENT_LIST } from '@/content/jvm';
@@ -18,6 +18,51 @@ const AnatomyPreview = lazy(() =>
 );
 
 const CHAPTERS = FIRST_RUN.chapters;
+
+/**
+ * Mounts its children only when the placeholder comes near the viewport, so a
+ * visitor who never scrolls that far does not download or render them.
+ * Without IntersectionObserver the children mount at once.
+ */
+function WhenNearViewport({
+  children,
+  fallback,
+  className,
+}: {
+  children: ReactNode;
+  fallback: ReactNode;
+  className?: string;
+}) {
+  const [near, setNear] = useState(() => typeof IntersectionObserver === 'undefined');
+  const ref = useCallback(
+    (element: HTMLDivElement | null) => {
+      if (!element || near) return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            setNear(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: '400px 0px' },
+      );
+      observer.observe(element);
+      return () => observer.disconnect();
+    },
+    [near],
+  );
+  return (
+    <div ref={ref} className={className}>
+      {near ? children : fallback}
+    </div>
+  );
+}
+
+const MAP_FALLBACK = (
+  <div className="flex h-full items-center justify-center text-[14px] text-fg-subtle">
+    Loading the map…
+  </div>
+);
 const LESSON_MINUTES = CHAPTERS.reduce((sum, chapter) => sum + chapter.minutes, 0);
 
 const DISCOVER: {
@@ -161,7 +206,8 @@ export function HomePage() {
   const progress = useProgress();
   const done = progress.lessons[FIRST_RUN.id] ?? {};
   const nextChapter = CHAPTERS.find((chapter) => !(chapter.id in done));
-  const started = Object.keys(done).length > 0;
+  const started = CHAPTERS.some((chapter) => chapter.id in done);
+  const finished = !nextChapter;
 
   return (
     <>
@@ -245,13 +291,21 @@ export function HomePage() {
               predict, shows you what really happens, and checks that it made sense.
             </p>
             <ButtonLink
-              to={nextChapter && started ? `/start?chapter=${nextChapter.id}` : '/start'}
+              to={
+                finished
+                  ? '/start?chapter=recap'
+                  : started && nextChapter
+                    ? `/start?chapter=${nextChapter.id}`
+                    : '/start'
+              }
               variant="primary"
               className="mt-6"
             >
-              {started && nextChapter
-                ? `Continue with chapter ${CHAPTERS.indexOf(nextChapter) + 1}`
-                : 'Begin the first lesson'}
+              {finished
+                ? 'Review what you now know'
+                : started && nextChapter
+                  ? `Continue with chapter ${CHAPTERS.indexOf(nextChapter) + 1}`
+                  : 'Begin the first lesson'}
               <ArrowRight size={16} aria-hidden />
             </ButtonLink>
           </div>
@@ -323,18 +377,37 @@ export function HomePage() {
                 </li>
               ))}
             </ul>
+            {progress.recent.length > 0 && (
+              <div className="mt-8">
+                <p
+                  id="home-recently-explored"
+                  className="flex items-center gap-1.5 text-[14px] text-fg-muted"
+                >
+                  <Clock3 size={14} aria-hidden /> Recently explored
+                </p>
+                <ul aria-labelledby="home-recently-explored" className="mt-2 flex flex-wrap gap-2">
+                  {progress.recent.slice(0, 6).map((item) => (
+                    <li key={item.key}>
+                      <Link
+                        to={item.href}
+                        className="inline-block rounded-md border border-ink-600 px-2.5 py-1 text-[14px] text-fg-muted hover:border-exec-400 hover:text-fg"
+                      >
+                        {item.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-          <div className="h-[340px] overflow-hidden rounded-2xl border border-ink-600 bg-ink-950 sm:h-[460px]">
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center text-[14px] text-fg-subtle">
-                  Loading the map…
-                </div>
-              }
-            >
+          <WhenNearViewport
+            className="h-[340px] overflow-hidden rounded-2xl border border-ink-600 bg-ink-950 sm:h-[460px]"
+            fallback={MAP_FALLBACK}
+          >
+            <Suspense fallback={MAP_FALLBACK}>
               <AnatomyPreview />
             </Suspense>
-          </div>
+          </WhenNearViewport>
         </section>
 
         {/* 5. Accuracy */}

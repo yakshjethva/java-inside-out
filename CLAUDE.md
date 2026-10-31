@@ -122,9 +122,10 @@ docs/               IMPLEMENTATION_PLAN.md, LEARNING_EXPERIENCE.md
 | `/about`        | About           | `#project-status`                                                       |
 | `/contributing` | Contributing    |                                                                         |
 
-`STATIC_ROUTES` in `src/app/routePaths.ts` drives both the router and the build, which writes an
-`index.html` (with the page title) for each route plus `404.html`, so deep links answer HTTP 200 on
-GitHub Pages. Add a route there only when its page exists. Explorer `mode` values stay
+Routes are registered in two places. The router (`src/app/routes.tsx`) declares the pages, and
+`STATIC_ROUTES` in `src/app/routePaths.ts` drives the build, which writes an `index.html` (with the
+page title) for each route plus `404.html`, so deep links answer HTTP 200 on GitHub Pages. Add a
+page to both, and only once it exists. Explorer `mode` values stay
 `anatomy|exploded|internal|execution` in URLs even though the interface calls them Overview, Show
 the parts, Look inside and Watch it run. Existing deep links must keep working.
 
@@ -133,8 +134,8 @@ the parts, Look inside and Watch it run. Existing deep links must keep working.
 Routes are lazy. Keep the shell (header, footer, settings) free of content: the header imports
 `LevelSwitch`, never `LevelText` or `RichText`, which pull in the glossary and all component docs.
 Interactive models that appear only on request (such as the inspector's "Try the interactive
-model") are loaded with `React.lazy`. After the first page is idle, the remaining routes are
-prefetched, and the service worker precaches every built file for offline use.
+model") are loaded with `React.lazy`, and the homepage's map preview mounts only when it comes
+near the viewport. After the first page is idle, the remaining routes are prefetched.
 
 ### Persistence
 
@@ -273,8 +274,10 @@ typecheck, lint, unit tests, build with `BASE_PATH`, Playwright against that bui
 a `<owner>.github.io` repository, or the `PAGES_BASE_PATH` repository variable. One-time setup:
 **Settings → Pages → Source: GitHub Actions**.
 
-The service worker precaches the build: pages are network-first with the cached shell as a
-fallback, hashed assets are cache-first, so the site works offline after the first visit.
+The service worker precaches the app shell, the favicon, every JavaScript and CSS bundle and the
+Latin font subsets; anything else is cached the first time it is fetched. Pages are network-first
+with the cached shell as a fallback and hashed assets are cache-first, so after the first visit the
+site works offline.
 
 ## Contributing
 
