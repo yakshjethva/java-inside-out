@@ -69,14 +69,14 @@ export const regionOf = (id: ComponentId): JvmRegion | undefined =>
   JVM_REGIONS.find((region) => region.id === id);
 
 /**
- * Where every class file comes from. Not part of the JVM: drawn with the
+ * Where a program's class files come from. Not part of the JVM: drawn with the
  * platform's dotted line wherever it appears.
  */
 export const BUILD_AREA: JvmRegion = {
   id: 'build-time',
   title: 'Build time',
   blurb: 'Compiles source code into class files.',
-  role: 'Before the JVM starts, the javac compiler turns .java source files into .class files that hold bytecode.',
+  role: 'Before the JVM starts, a compiler turns source files into .class files that hold bytecode: javac for Java (other JVM languages have their own compilers).',
   family: 'plat',
 };
 

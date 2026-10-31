@@ -12,7 +12,7 @@ export const SOCIAL_IMAGE = {
   path: '/og/jvm-atlas.png',
   width: 1200,
   height: 630,
-  alt: 'JVM Atlas: the six regions of the Java Virtual Machine drawn as an exploded stack.',
+  alt: 'JVM Atlas: the five regions of the Java Virtual Machine and the platform beneath them, drawn as an exploded stack.',
 };
 
 /** The <head> tags for a page, written into its prerendered HTML. */
