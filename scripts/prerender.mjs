@@ -54,10 +54,23 @@ function inlineStylesheets(html) {
  * hydration starts only a frame later.
  */
 function runAfterFirstPaint(html) {
-  return html.replace(
+  // Vite also preloads the entry's dependencies; those links move into the
+  // loader too, so nothing script-related is fetched before the first paint.
+  const preloads = [];
+  const withoutPreloads = html.replace(
+    /\s*<link rel="modulepreload" crossorigin href="([^"]+)">/g,
+    (_, href) => {
+      preloads.push(href);
+      return '';
+    },
+  );
+  return withoutPreloads.replace(
     /<script type="module" crossorigin src="([^"]+)"><\/script>/,
     (_, src) =>
-      `<script type="module">requestAnimationFrame(()=>setTimeout(()=>import(${JSON.stringify(src)})))</script>`,
+      `<script type="module">requestAnimationFrame(()=>setTimeout(()=>{` +
+      `for(const h of ${JSON.stringify(preloads)}){const l=document.createElement("link");` +
+      `l.rel="modulepreload";l.crossOrigin="";l.href=h;document.head.append(l)}` +
+      `import(${JSON.stringify(src)})}))</script>`,
   );
 }
 const template = runAfterFirstPaint(inlineStylesheets(built));

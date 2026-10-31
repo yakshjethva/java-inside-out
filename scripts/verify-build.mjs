@@ -95,6 +95,9 @@ function checkPage(where, html, meta) {
     }
   }
 
+  if (/<link rel="modulepreload"|<script type="module"[^>]*\ssrc=/.test(html))
+    fail(where, 'fetches a script before its first paint');
+
   const app = html.match(/<div id="root">([\s\S]*?)<\/div>\s*(?:<noscript>|<\/body>)/);
   const text = app
     ? app[1].replace(/<script[\s\S]*?<\/script>|<[^>]+>/g, ' ').replace(/\s+/g, ' ')
@@ -195,14 +198,16 @@ const hasThree = (file) =>
   fs.readFileSync(path.join(assets, file), 'utf8').includes('WebGLRenderer');
 
 const index = read('index.html') ?? '';
-// The entry is loaded by a module script tag, a modulepreload link or (in
-// prerendered pages) an inline import() that runs after the first paint.
+// The entry is loaded by a module script tag or a modulepreload link or, in
+// prerendered pages, by the inline loader that runs after the first paint
+// (its import() and the preloads it adds).
 const initial = closure(
   [
     ...index.matchAll(
       /<(?:script type="module"|link rel="modulepreload")[^>]*?(?:src|href)="[^"]*\/assets\/([^"]+\.js)"/g,
     ),
     ...index.matchAll(/import\("[^"]*\/assets\/([^"]+\.js)"\)/g),
+    ...index.matchAll(/"[^"]*\/assets\/([^"]+\.js)"/g),
   ].map((match) => match[1]),
 );
 if (initial.length === 0) fail('index.html', 'no entry script found');
