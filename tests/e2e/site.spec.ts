@@ -32,16 +32,22 @@ test.describe('GitHub Pages deployment', () => {
     expect(response?.status()).toBe(200);
     await expect(page).toHaveTitle('JVM Atlas · Explore the machine behind Java programs');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Ever wondered what happens when you run Java code?',
+      'Explore the machine behind every Java program.',
     );
-    await expect(page.getByRole('link', { name: 'Start learning' })).toHaveAttribute(
+    await expect(page.getByRole('link', { name: 'Explore the anatomy' })).toHaveAttribute(
+      'href',
+      /\/anatomy$/,
+    );
+    await expect(page.getByRole('link', { name: 'Start with the basics' })).toHaveAttribute(
       'href',
       /\/start$/,
     );
-    await expect(
-      page.getByRole('link', { name: 'I already know Java. Explore the JVM.' }),
-    ).toBeVisible();
-    await expect(page.getByRole('figure', { name: /Follow one line of Java/ })).toBeVisible();
+    const areas = page.getByRole('list', {
+      name: 'The areas of the atlas, from source code to processor',
+    });
+    await expect(areas.getByRole('link')).toHaveCount(7);
+    await expect(areas.getByRole('link', { name: /Class loading/ })).toBeVisible();
+    await expect(page.getByRole('figure', { name: /Follow one line of Java/ })).toBeAttached();
 
     await page.waitForLoadState('networkidle');
     expect(outside).toEqual([]);
@@ -81,16 +87,18 @@ test.describe('GitHub Pages deployment', () => {
     ).toBeVisible();
     await page.getByRole('link', { name: 'Go home' }).click();
     await expect(page).toHaveURL(baseURL!);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Ever wondered');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Explore the machine');
   });
 });
 
 test.describe('navigation', () => {
   const pages = [
     ['Start here', 'What happens when you run a Java program?', 'Start here'],
+    ['Explore anatomy', 'Explore the JVM', 'JVM anatomy'],
     ['Learn', 'Start with a question', 'Learn'],
-    ['Explore the JVM', 'Explore the JVM', 'JVM anatomy'],
     ['Glossary', 'Glossary', 'Glossary'],
+    ['References', 'References', 'References'],
+    ['About', "Don't memorize the JVM. Explore it.", 'About'],
   ] as const;
 
   test('the primary navigation reaches every page', async ({ page, isMobile }) => {
@@ -106,27 +114,17 @@ test.describe('navigation', () => {
     expect(problems).toEqual([]);
   });
 
-  test('reference and project pages are under More', async ({ page, isMobile }) => {
+  test('project pages are in the mobile menu and the footer', async ({ page, isMobile }) => {
     await page.goto('./');
-    const open = async () => {
-      if (isMobile) await page.getByRole('button', { name: 'Open menu' }).click();
-      else
-        await page
-          .getByRole('navigation', { name: 'Primary' })
-          .getByRole('button', { name: 'More' })
-          .click();
-    };
-    const scope = () =>
-      isMobile ? page.getByRole('navigation', { name: 'Mobile' }) : page.locator('header');
-    await open();
-    await scope()
-      .getByRole('link', { name: /^References/ })
-      .click();
-    await expect(page.getByRole('heading', { level: 1, name: 'References' })).toBeVisible();
-    await open();
-    await scope()
-      .getByRole('link', { name: /^Project status/ })
-      .click();
+    if (isMobile) {
+      await page.getByRole('button', { name: 'Open menu' }).click();
+      await page
+        .getByRole('navigation', { name: 'Mobile' })
+        .getByRole('link', { name: 'Project status' })
+        .click();
+    } else {
+      await page.getByRole('contentinfo').getByRole('link', { name: 'Project status' }).click();
+    }
     await expect(page).toHaveURL(/\/about#project-status$/);
     await expect(page.getByRole('heading', { level: 2, name: 'Project status' })).toBeVisible();
   });
@@ -178,7 +176,7 @@ test.describe('offline', () => {
     await context.setOffline(true);
 
     await page.reload();
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Ever wondered');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Explore the machine');
 
     await page.goto('start?chapter=gc');
     await expect(page.getByRole('heading', { level: 1, name: 'Garbage collection' })).toBeVisible();

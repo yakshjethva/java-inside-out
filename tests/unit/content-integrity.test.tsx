@@ -4,7 +4,7 @@ import { childrenOf, COMPONENT_IDS, COMPONENTS, isAncestor, type ComponentId } f
 import { ANATOMY_QUIZ } from '@/content/jvm/quiz';
 import { RELATIONSHIPS } from '@/content/jvm/relationships';
 import { SCENARIOS } from '@/content/jvm/scenarios';
-import { JVM_REGIONS } from '@/content/jvm/regions';
+import { ATLAS_AREAS, JVM_REGIONS } from '@/content/jvm/regions';
 import { FIRST_RUN, FIRST_RUN_QUIZ } from '@/content/lesson/firstRun';
 import { LEARNING_PATHS } from '@/content/paths';
 import { QUESTION_PATHS } from '@/content/questions';
@@ -13,6 +13,7 @@ import { REFERENCE_IDS, REFERENCES } from '@/data/references';
 import { GLOSSARY, getGlossaryEntry } from '@/glossary';
 import { contains, orthogonalRoute, anchorPoint, type Point, type Rect } from '@/lib/geometry';
 import { collectLinks, collectTermIds } from '@/lib/richText';
+import { HOME_EXHIBITS } from '@/modules/home/exhibits';
 import { DISSECTIONS } from '@/modules/jvm/internals/registry';
 import { EDGE_ROUTES, NODE_RECTS } from '@/modules/jvm/layout';
 import type { Citation, ComponentDoc } from '@/types/content';
@@ -311,6 +312,34 @@ describe('learning paths', () => {
     const routes = new Set(PRERENDER_PATHS);
     for (const path of LEARNING_PATHS)
       if (path.route) expect(routes.has(path.route), path.id).toBe(true);
+  });
+});
+
+describe('home page', () => {
+  it('shows exhibits that open a real walkthrough or dissection', () => {
+    for (const exhibit of HOME_EXHIBITS) {
+      const params = new URLSearchParams(exhibit.to.split('?')[1]);
+      if (exhibit.kind === 'walkthrough') {
+        expect(
+          SCENARIOS.map((s) => s.id),
+          exhibit.id,
+        ).toContain(exhibit.id);
+        expect(params.get('mode')).toBe('execution');
+        expect(params.get('s')).toBe(exhibit.id);
+      } else {
+        expect(DISSECTIONS[exhibit.id as ComponentId], exhibit.id).toBeDefined();
+        expect(params.get('mode')).toBe('internal');
+        expect(params.get('c')).toBe(exhibit.id);
+      }
+    }
+  });
+
+  it('draws the seven areas in the order a program meets them', () => {
+    expect(ATLAS_AREAS.map((area) => area.id)).toEqual([
+      'build-time',
+      ...JVM_REGIONS.map((region) => region.id),
+    ]);
+    expect(ATLAS_AREAS.at(-1)!.id).toBe('platform');
   });
 });
 

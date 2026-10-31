@@ -21,8 +21,9 @@ export interface NavItem {
 }
 
 /**
- * Primary navigation, in the order a new visitor needs it. Only pages that
- * exist in this release are listed.
+ * Primary navigation, in the order a new visitor needs it. The logo is the
+ * link home; the mobile menu lists Home explicitly. Only pages that exist in
+ * this release are listed.
  */
 export const PRIMARY_NAV: NavItem[] = [
   {
@@ -30,23 +31,27 @@ export const PRIMARY_NAV: NavItem[] = [
     label: 'Start here',
     description: 'A guided first lesson: what happens when you run a Java program',
   },
-  { to: '/paths', label: 'Learn', description: 'Learning paths that begin with a question' },
   {
     to: '/anatomy',
-    label: 'Explore the JVM',
-    description: 'The interactive map of the machine that runs Java',
+    label: 'Explore anatomy',
+    description: 'The interactive atlas of the machine that runs Java',
+  },
+  {
+    to: '/learn',
+    label: 'Learn',
+    description: 'Guides and learning paths that begin with a question',
   },
   { to: '/glossary', label: 'Glossary', description: 'Every technical term, in plain words' },
-];
-
-/** Reference and project pages, grouped under "More". */
-export const MORE_NAV: NavItem[] = [
   {
     to: '/references',
     label: 'References',
     description: 'Specifications, JEPs and source code we cite',
   },
   { to: '/about', label: 'About', description: 'Why JVM Atlas exists, versions and accuracy' },
+];
+
+/** Project pages, linked from the footer and the About page. */
+export const PROJECT_NAV: NavItem[] = [
   {
     to: '/contributing',
     label: 'Contributing',

@@ -1,6 +1,13 @@
 import { Link } from 'react-router';
-import { MORE_NAV, PRIMARY_NAV, SITE } from '@/data/site';
+import { PRIMARY_NAV, PROJECT_NAV, SITE } from '@/data/site';
 import { LogoMark, Wordmark } from './Logo';
+
+const REFERENCE_PAGES = ['/references', '/about'];
+const LEARN_LINKS = PRIMARY_NAV.filter((item) => !REFERENCE_PAGES.includes(item.to));
+const PROJECT_LINKS = [
+  ...PRIMARY_NAV.filter((item) => REFERENCE_PAGES.includes(item.to)),
+  ...PROJECT_NAV,
+];
 
 export function SiteFooter() {
   return (
@@ -26,7 +33,7 @@ export function SiteFooter() {
         <nav aria-label="Footer: learn">
           <p className="text-[13px] font-medium text-fg">Learn</p>
           <ul className="mt-2 space-y-1.5 text-[13.5px]">
-            {PRIMARY_NAV.map((item) => (
+            {LEARN_LINKS.map((item) => (
               <li key={item.to}>
                 <Link to={item.to} className="text-fg-muted hover:text-fg">
                   {item.label}
@@ -38,7 +45,7 @@ export function SiteFooter() {
         <nav aria-label="Footer: project">
           <p className="text-[13px] font-medium text-fg">Project</p>
           <ul className="mt-2 space-y-1.5 text-[13.5px]">
-            {MORE_NAV.map((item) => (
+            {PROJECT_LINKS.map((item) => (
               <li key={item.to}>
                 <Link to={item.to} className="text-fg-muted hover:text-fg">
                   {item.label}

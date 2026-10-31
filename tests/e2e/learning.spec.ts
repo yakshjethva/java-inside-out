@@ -12,7 +12,7 @@ test.describe('Start here', () => {
     });
 
     await page.goto('./');
-    await page.getByRole('link', { name: 'Start learning' }).click();
+    await page.getByRole('link', { name: 'Start with the basics' }).click();
     await page.getByRole('link', { name: /Start chapter 1/ }).click();
 
     const titles = [

@@ -6,7 +6,7 @@ test.describe('prerendered pages without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
   const pages: [path: string, canonical: string, heading: string, text: RegExp][] = [
-    ['./', '/', 'Ever wondered what happens when you run Java code?', /Start learning/],
+    ['./', '/', 'Explore the machine behind every Java program.', /Start with the basics/],
     ['start', '/start', 'What happens when you run a Java program?', /The compiler/],
     ['learn', '/learn', 'Start with a question', /What is bytecode\?/],
     ['paths', '/learn', 'Start with a question', /What is bytecode\?/],
