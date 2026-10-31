@@ -275,9 +275,10 @@ a `<owner>.github.io` repository, or the `PAGES_BASE_PATH` repository variable. 
 **Settings → Pages → Source: GitHub Actions**.
 
 The service worker precaches the app shell, the favicon, every JavaScript and CSS bundle and the
-Latin font subsets; anything else is cached the first time it is fetched. Pages are network-first
-with the cached shell as a fallback and hashed assets are cache-first, so after the first visit the
-site works offline.
+Latin font subsets, and caches other same-origin files (not pages) the first time they are fetched.
+Page navigations are never cached: they go to the network and fall back to the cached shell, which
+renders the requested route. Hashed assets are cache-first, so after the first visit the site works
+offline.
 
 ## Contributing
 

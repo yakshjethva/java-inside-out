@@ -8,6 +8,7 @@ import { ComponentTree, type TreeItem } from '@/components/anatomy/ComponentTree
 import { ComponentInspector } from '@/components/inspector/ComponentInspector';
 import { KnowledgeCheck } from '@/components/learning/KnowledgeCheck';
 import { getComponentDoc, type ComponentId } from '@/content/jvm';
+import { JVM_REGIONS } from '@/content/jvm/regions';
 import { ANATOMY_QUIZ } from '@/content/jvm/quiz';
 import { relationshipsOf } from '@/content/jvm/relationships';
 import { preferencesStore, progressStore } from '@/hooks/useLearningState';
@@ -333,11 +334,14 @@ describe('JVM anatomy page', () => {
 
   it('reads each region’s plain-language description to screen readers', async () => {
     renderInRouter(<JvmAnatomyPage />, '/anatomy');
-    expect(
-      await screen.findByRole('button', {
-        name: /^Memory \(Runtime data areas\).*Stores objects and runtime data\.$/,
-      }),
-    ).toBeInTheDocument();
+    const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    for (const region of JVM_REGIONS)
+      expect(
+        await screen.findByRole('button', {
+          name: new RegExp(`^${literal(region.title)} \\(.*${literal(region.blurb)}$`),
+        }),
+        region.id,
+      ).toBeInTheDocument();
   });
 
   it('opens the execution walkthrough and steps forward', async () => {

@@ -170,9 +170,10 @@ slash) and unknown paths still load the app, with status 404.
 ### Offline use
 
 A small service worker (`src/sw/service-worker.js`, registered in production builds only)
-precaches the app shell, scripts, styles and Latin fonts after the first visit, and caches anything
-else the first time it is fetched. Pages are fetched from the network first, so a new deployment
-shows up immediately, and fall back to the cached copy when you are offline.
+precaches the app shell, scripts, styles and Latin fonts after the first visit, and caches other
+files (not pages) the first time they are fetched. Pages always come from the network, so a new
+deployment shows up immediately; when you are offline, the cached app shell loads instead and
+opens the page you asked for.
 
 ## Project structure
 

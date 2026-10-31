@@ -5,7 +5,7 @@ const KEY_POINTS = [
   'You write source code, a .java file.',
   'The compiler (javac) translates it into bytecode in a class file.',
   'The JVM’s class loader finds, checks and prepares your classes.',
-  'Objects live in the heap; method calls get frames on a thread’s stack, and a variable such as `person` holds a reference to its object, not the object itself.',
+  'Objects live in the heap; method calls get frames on a thread’s stack, and a variable such as person holds a reference to its object, not the object itself.',
   'The interpreter runs bytecode, and the JIT compiler turns busy code into machine code for the CPU.',
   'The garbage collector reclaims objects that can no longer be reached.',
 ];

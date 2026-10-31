@@ -457,7 +457,7 @@ export const FIRST_RUN: Lesson = {
       title: 'Memory',
       question: 'When your program creates an object, where does it go?',
       takeaway:
-        'Objects live in the heap; each method call gets a frame on its thread’s stack; a variable such as `person` holds a reference to its object, not the object itself.',
+        'Objects live in the heap; each method call gets a frame on its thread’s stack; a variable such as person holds a reference to its object, not the object itself.',
       minutes: 4,
       exhibit: 'memory',
       component: 'runtime-data-areas',
