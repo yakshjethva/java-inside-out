@@ -18,6 +18,11 @@ function resolveBase(raw: string | undefined): string {
 
 /** Fonts subsets precached for offline use; other subsets are cached when first used. */
 const PRECACHED_FONT = /-latin-[a-z]+-normal-[\w-]+\.woff2$/;
+/**
+ * Not precached: the 3D viewer (Three.js) is downloaded only by readers who
+ * open it, and then cached by the service worker on first use.
+ */
+const ON_DEMAND = /^Anatomy3D-/;
 
 /**
  * Writes sw.js after the client build: the service worker, prefixed with its
@@ -40,7 +45,10 @@ function serviceWorkerOutput(): Plugin {
       const html = fs.readFileSync(indexFile, 'utf8');
       const assets = fs
         .readdirSync(path.join(outDir, 'assets'))
-        .filter((file) => /\.(js|css)$/.test(file) || PRECACHED_FONT.test(file))
+        .filter(
+          (file) =>
+            (/\.(js|css)$/.test(file) && !ON_DEMAND.test(file)) || PRECACHED_FONT.test(file),
+        )
         .sort()
         .map((file) => `assets/${file}`);
       const precache = ['./', 'favicon.svg', ...assets];

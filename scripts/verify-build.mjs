@@ -221,6 +221,10 @@ if (threeChunks.length === 0) fail('assets', 'no chunk contains the 3D renderer'
 for (const file of threeChunks)
   if (gzipSize(file) > BUDGETS.threeChunk)
     fail(file, `${gzipSize(file)} bytes gzip, budget ${BUDGETS.threeChunk}`);
+// Readers who never open the 3D viewer never download it, offline caching included.
+const worker = read('sw.js') ?? '';
+for (const file of threeChunks)
+  if (worker.includes(file)) fail('sw.js', `precaches ${file}, which should load on demand`);
 
 if (problems.length) {
   console.error(`verify-build: ${problems.length} problem(s) in dist/ (base ${BASE_URL}):`);
