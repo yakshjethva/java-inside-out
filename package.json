@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-server && node scripts/prerender.mjs && node scripts/verify-build.mjs",
+    "verify:build": "node scripts/verify-build.mjs",
     "preview": "vite preview",
     "preview:pages": "node scripts/serve-pages.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",

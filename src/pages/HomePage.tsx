@@ -22,7 +22,7 @@ const CHAPTERS = FIRST_RUN.chapters;
 /**
  * Mounts its children only when the placeholder comes near the viewport, so a
  * visitor who never scrolls that far does not download or render them.
- * Without IntersectionObserver the children mount at once.
+ * Without IntersectionObserver the children mount as soon as the page does.
  */
 function WhenNearViewport({
   children,
@@ -33,10 +33,15 @@ function WhenNearViewport({
   fallback: ReactNode;
   className?: string;
 }) {
-  const [near, setNear] = useState(() => typeof IntersectionObserver === 'undefined');
+  // Never during the server render or hydration: the preview is client-only.
+  const [near, setNear] = useState(false);
   const ref = useCallback(
     (element: HTMLDivElement | null) => {
       if (!element || near) return;
+      if (typeof IntersectionObserver === 'undefined') {
+        setNear(true);
+        return;
+      }
       const observer = new IntersectionObserver(
         (entries) => {
           if (entries.some((entry) => entry.isIntersecting)) {

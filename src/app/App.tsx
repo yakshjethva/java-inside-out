@@ -1,15 +1,17 @@
-import { useEffect } from 'react';
-import { createBrowserRouter } from 'react-router';
+import { useEffect, useLayoutEffect } from 'react';
+import type { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
-import { prefetchPages, routes } from './routes';
+import { prefetchPages } from './routes';
 
-/**
- * import.meta.env.BASE_URL is "/" locally and "/<repo>/" on GitHub Pages. Keeping
- * the trailing slash makes links to the home page match the URL Pages serves.
- */
-const router = createBrowserRouter(routes, { basename: import.meta.env.BASE_URL });
+type Router = ReturnType<typeof createBrowserRouter>;
 
-export function App() {
+export function App({ router }: { router: Router }) {
+  // Prerendered HTML for a different URL stays hidden until React has painted
+  // the right page (see scripts/prerender.mjs); this reveals it.
+  useLayoutEffect(() => {
+    document.documentElement.removeAttribute('data-client-render');
+  }, []);
+
   useEffect(() => {
     const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
     const handle = idle(() => prefetchPages());

@@ -11,6 +11,7 @@ export const pageLoaders = {
   home: () => import('@/pages/HomePage'),
   start: () => import('@/pages/StartHerePage'),
   paths: () => import('@/pages/LearningPathsPage'),
+  topic: () => import('@/pages/TopicPage'),
   anatomy: () => import('@/pages/JvmAnatomyPage'),
   glossary: () => import('@/pages/GlossaryPage'),
   references: () => import('@/pages/ReferencesPage'),
@@ -32,6 +33,15 @@ export const routes: RouteObject[] = [
         path: 'start',
         lazy: () => pageLoaders.start().then((m) => ({ Component: m.StartHerePage })),
       },
+      {
+        path: 'learn',
+        lazy: () => pageLoaders.paths().then((m) => ({ Component: m.LearningPathsPage })),
+      },
+      {
+        path: 'learn/:slug',
+        lazy: () => pageLoaders.topic().then((m) => ({ Component: m.TopicPage })),
+      },
+      // The earlier address of Learn keeps working; its canonical URL is /learn.
       {
         path: 'paths',
         lazy: () => pageLoaders.paths().then((m) => ({ Component: m.LearningPathsPage })),

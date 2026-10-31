@@ -428,3 +428,19 @@
 .ij-node:hover > .ij-node-frame {
   stroke-opacity: 1;
 }
+
+/*
+ * A page prerendered for another URL waits, hidden, for the client render
+ * (src/app/App.tsx). If the scripts never arrive, the prerendered page is shown
+ * after a few seconds rather than a blank one.
+ */
+html[data-client-render] #root {
+  visibility: hidden;
+  animation: reveal-prerendered 0s 5s forwards;
+}
+
+@keyframes reveal-prerendered {
+  to {
+    visibility: visible;
+  }
+}

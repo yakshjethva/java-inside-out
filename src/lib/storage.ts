@@ -21,8 +21,9 @@ export function readJson<T>(
   fallback: T,
   migrate?: (value: unknown) => unknown,
 ): T {
+  if (typeof window === 'undefined') return fallback;
   try {
-    const raw = globalThis.localStorage?.getItem(PREFIX + key);
+    const raw = window.localStorage.getItem(PREFIX + key);
     if (raw == null) return fallback;
     const parsed: unknown = JSON.parse(raw);
     const upgraded = migrate ? migrate(parsed) : parsed;
@@ -33,16 +34,18 @@ export function readJson<T>(
 }
 
 export function writeJson(key: string, value: unknown): void {
+  if (typeof window === 'undefined') return;
   try {
-    globalThis.localStorage?.setItem(PREFIX + key, JSON.stringify(value));
+    window.localStorage.setItem(PREFIX + key, JSON.stringify(value));
   } catch {
     // Persistence is optional; ignore quota and access errors.
   }
 }
 
 export function removeKey(key: string): void {
+  if (typeof window === 'undefined') return;
   try {
-    globalThis.localStorage?.removeItem(PREFIX + key);
+    window.localStorage.removeItem(PREFIX + key);
   } catch {
     // ignore
   }

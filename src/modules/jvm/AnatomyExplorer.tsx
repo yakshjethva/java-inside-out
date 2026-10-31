@@ -146,6 +146,14 @@ export function AnatomyExplorer() {
   const [tourStep, setTourStep] = useState<number | null>(() =>
     !(TOUR_ID in preferences.dismissed) && !selectedId && mode === 'anatomy' ? 0 : null,
   );
+  // After hydration the stored preferences replace the defaults: a learner who
+  // already dismissed the tour must not see it again.
+  const tourDismissed = TOUR_ID in preferences.dismissed;
+  const [seenDismissed, setSeenDismissed] = useState(tourDismissed);
+  if (tourDismissed !== seenDismissed) {
+    setSeenDismissed(tourDismissed);
+    if (tourDismissed) setTourStep(null);
+  }
   const closeTour = () => {
     setTourStep(null);
     preferenceActions.dismiss(TOUR_ID);

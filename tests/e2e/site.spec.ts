@@ -69,7 +69,7 @@ test.describe('GitHub Pages deployment', () => {
     const response = await page.goto('anatomy?c=heap');
     expect(response?.status()).toBe(200);
     await expect(page).toHaveURL(/\/anatomy\/?\?c=heap$/);
-    await expect(page).toHaveTitle('Explore the JVM · JVM Atlas');
+    await expect(page).toHaveTitle('JVM anatomy · JVM Atlas');
     await expect(page.getByRole('heading', { level: 2, name: 'Heap', exact: true })).toBeVisible();
   });
 
@@ -89,7 +89,7 @@ test.describe('navigation', () => {
   const pages = [
     ['Start here', 'What happens when you run a Java program?', 'Start here'],
     ['Learn', 'Start with a question', 'Learn'],
-    ['Explore the JVM', 'Explore the JVM', 'Explore the JVM'],
+    ['Explore the JVM', 'Explore the JVM', 'JVM anatomy'],
     ['Glossary', 'Glossary', 'Glossary'],
   ] as const;
 
