@@ -30,15 +30,52 @@ const {
   BASE_URL,
 } = server;
 
-const template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
-if (!template.includes('<div id="root"></div>'))
+const built = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
+if (!built.includes('<div id="root"></div>'))
   throw new Error('dist/index.html is already prerendered: run `npm run build` from the start.');
 
-/** Runs before the body is parsed, so a mismatching page never flashes. */
+/**
+ * The stylesheet is written into each page instead of linked: the first paint
+ * then waits for nothing but the HTML, rather than for a second request that
+ * competes with the scripts. The file stays in dist/assets for the service
+ * worker; its font URLs are absolute, so they resolve the same inline.
+ */
+function inlineStylesheets(html) {
+  return html.replace(/<link rel="stylesheet"[^>]*href="([^"]+\.css)"[^>]*>/g, (_, href) => {
+    const file = path.join(dist, href.slice(BASE_URL.length));
+    const css = fs.readFileSync(file, 'utf8').replace(/<\/style/gi, '<\\/style');
+    return `<style>${css}</style>`;
+  });
+}
+/**
+ * The app's entry module is requested right after the browser has painted the
+ * prerendered page, so the first paint never waits for, or shares bandwidth
+ * with, the scripts. On a real connection the HTML is long parsed by then, so
+ * hydration starts only a frame later.
+ */
+function runAfterFirstPaint(html) {
+  return html.replace(
+    /<script type="module" crossorigin src="([^"]+)"><\/script>/,
+    (_, src) =>
+      `<script type="module">requestAnimationFrame(()=>setTimeout(()=>import(${JSON.stringify(src)})))</script>`,
+  );
+}
+const template = runAfterFirstPaint(inlineStylesheets(built));
+if (!template.includes('<script type="module">requestAnimationFrame('))
+  throw new Error('prerender: the entry script tag was not found in dist/index.html');
+
+/**
+ * Runs before the body is parsed, so the first paint is already right: a page
+ * rendered for another URL is marked for a fresh client render, and a learner
+ * who dismissed the explorer tour does not see the prerendered one (the key is
+ * the preferences store's, src/lib/storage.ts).
+ */
 const clientRenderMarker = (renderedPath) =>
-  `<script>(function(){var b=${JSON.stringify(BASE_URL)},r=${JSON.stringify(renderedPath)},p=location.pathname;` +
+  `<script>(function(){var d=document.documentElement,b=${JSON.stringify(BASE_URL)},r=${JSON.stringify(renderedPath)},p=location.pathname;` +
   `if(p.indexOf(b)===0)p="/"+p.slice(b.length);p=p.replace(/\\/+$/,"")||"/";` +
-  `if(location.search||p!==r)document.documentElement.setAttribute("data-client-render","")})()</script>`;
+  `if(location.search||p!==r)d.setAttribute("data-client-render","");` +
+  `try{var s=JSON.parse(localStorage.getItem("inside-java:v1:preferences")||"null");` +
+  `if(s&&s.dismissed&&s.dismissed["explorer-tour"])d.setAttribute("data-tour-dismissed","")}catch(e){}})()</script>`;
 
 function pageHtml(meta, appHtml, renderedPath) {
   return template

@@ -91,6 +91,11 @@
 }
 
 @layer base {
+  /* A fieldset is otherwise as wide as its widest line, which can overflow a phone screen. */
+  fieldset {
+    min-width: 0;
+  }
+
   :root {
     color-scheme: light;
     --header-height: 56px;
@@ -300,14 +305,18 @@
     color: var(--color-fg);
     font-weight: 600;
   }
-  .prose-ij code {
+  /* Inline code only: code blocks inside prose keep their own size and layout. */
+  .prose-ij code:not(pre code) {
     font-size: 0.86em;
     padding: 0.1em 0.35em;
     border-radius: var(--radius-xs);
     background: var(--color-ink-750);
     border: 1px solid var(--color-ink-600);
     color: var(--color-exec-200);
-    white-space: nowrap;
+    /* Long snippets may break on narrow screens; each line keeps its frame. */
+    overflow-wrap: anywhere;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
   .prose-ij a {
     color: var(--color-exec-300);
@@ -344,10 +353,16 @@
   }
 
   /* Shiki output inherits our palette (see src/components/code/highlighter.ts). */
+  /* The surface scrolls (and takes keyboard focus), not the pre inside it. */
+  .code-surface {
+    overflow-x: auto;
+  }
   .code-surface pre {
     margin: 0;
     padding: 0.9rem 1rem;
-    overflow-x: auto;
+    overflow-x: visible;
+    width: max-content;
+    min-width: 100%;
     font-size: 12.5px;
     line-height: 1.65;
     background: transparent !important;
@@ -430,6 +445,15 @@
 }
 
 /*
+ * Pages are flex items of <main>. A centred container (mx-auto) would shrink
+ * to its content there, and a long page that is still being parsed would then
+ * widen as it loads; full width keeps every page container steady.
+ */
+#main > * {
+  width: 100%;
+}
+
+/*
  * A page prerendered for another URL waits, hidden, for the client render
  * (src/app/App.tsx). If the scripts never arrive, the prerendered page is shown
  * after a few seconds rather than a blank one.
@@ -437,6 +461,11 @@
 html[data-client-render] #root {
   visibility: hidden;
   animation: reveal-prerendered 0s 5s forwards;
+}
+
+/* A learner who dismissed the explorer tour never sees the prerendered one. */
+html[data-tour-dismissed] [data-explorer-tour] {
+  display: none;
 }
 
 @keyframes reveal-prerendered {

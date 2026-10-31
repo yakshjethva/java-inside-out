@@ -71,13 +71,30 @@ export const routes: RouteObject[] = [
   },
 ];
 
+/**
+ * Loads the other pages one at a time while the browser is idle, then the
+ * code highlighter, so later navigation is instant. Skipped when the reader
+ * asks to save data or the connection is very slow; the service worker still
+ * precaches every bundle for offline use.
+ */
 export function prefetchPages() {
-  for (const load of Object.values(pageLoaders)) {
-    load().catch(() => {
+  const connection = (
+    navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }
+  ).connection;
+  if (connection?.saveData || /2g/.test(connection?.effectiveType ?? '')) return;
+  const idle =
+    window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 300));
+  const queue: (() => Promise<unknown>)[] = [
+    ...Object.values(pageLoaders),
+    () => import('@/components/code/highlighter').then((module) => module.preloadHighlighter()),
+  ];
+  const next = () => {
+    const load = queue.shift();
+    if (!load) return;
+    load()
       // Offline or a deploy replaced the chunk: the route will retry on navigation.
-    });
-  }
-  import('@/components/code/highlighter')
-    .then((module) => module.preloadHighlighter())
-    .catch(() => {});
+      .catch(() => {})
+      .finally(() => idle(next));
+  };
+  idle(next);
 }

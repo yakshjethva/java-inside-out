@@ -53,6 +53,7 @@ export function ExplorerTour({
 
   return (
     <section
+      data-explorer-tour
       aria-label="Guided tour of the explorer"
       className={cn(
         'rounded-xl border border-exec-500/50 bg-ink-900/96 p-4',

@@ -195,11 +195,14 @@ const hasThree = (file) =>
   fs.readFileSync(path.join(assets, file), 'utf8').includes('WebGLRenderer');
 
 const index = read('index.html') ?? '';
+// The entry is loaded by a module script tag, a modulepreload link or (in
+// prerendered pages) an inline import() that runs after the first paint.
 const initial = closure(
   [
     ...index.matchAll(
       /<(?:script type="module"|link rel="modulepreload")[^>]*?(?:src|href)="[^"]*\/assets\/([^"]+\.js)"/g,
     ),
+    ...index.matchAll(/import\("[^"]*\/assets\/([^"]+\.js)"\)/g),
   ].map((match) => match[1]),
 );
 if (initial.length === 0) fail('index.html', 'no entry script found');

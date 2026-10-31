@@ -144,7 +144,7 @@ export function AnatomyExplorer() {
   const progress = useProgress();
   const reducedMotion = useReducedMotion();
   const wide = useMediaQuery('(min-width: 1280px)', true);
-  const wideEnoughForOverlay = useMediaQuery('(min-width: 640px)', true);
+
   const canvasRef = useRef<CanvasHandle>(null);
   const canvasAreaRef = useRef<HTMLDivElement>(null);
   const inspectorRef = useRef<HTMLDivElement>(null);
@@ -191,6 +191,8 @@ export function AnatomyExplorer() {
   const openTour = () => {
     if (mode === 'internal') state.setMode('anatomy');
     setTourStep(0);
+    // Set before the first paint for learners who had dismissed the tour (scripts/prerender.mjs).
+    document.documentElement.removeAttribute('data-tour-dismissed');
   };
 
   // The overview shows the six main parts; the region holding the selection is opened.
@@ -616,10 +618,6 @@ export function AnatomyExplorer() {
         </Popover>
       </div>
 
-      {tourStep !== null && mode !== 'internal' && !wideEnoughForOverlay && (
-        <ExplorerTour step={tourStep} onStep={setTourStep} onClose={closeTour} placement="inline" />
-      )}
-
       <div className="relative flex min-h-0 flex-1 flex-col xl:flex-row">
         {treeOpen && state.viewer !== 'list' && (
           <aside
@@ -804,8 +802,12 @@ export function AnatomyExplorer() {
             </div>
           )}
 
-          {tourStep !== null && mode !== 'internal' && wideEnoughForOverlay && (
-            <ExplorerTour step={tourStep} onStep={setTourStep} onClose={closeTour} />
+          {/* The tour card floats over the map from 640 px; CSS picks the placement, so the
+              prerendered page already has the right one and nothing moves on load. */}
+          {tourStep !== null && mode !== 'internal' && (
+            <div className="hidden sm:block">
+              <ExplorerTour step={tourStep} onStep={setTourStep} onClose={closeTour} />
+            </div>
           )}
 
           {hoveredDoc && hoverRect && mode !== 'internal' && state.viewer === '2d' && (
@@ -839,6 +841,18 @@ export function AnatomyExplorer() {
             <SelectionCrumb id={selectedId} onNavigate={navigate} />
           )}
         </div>
+
+        {/* On small screens the tour sits under the map instead of covering it. */}
+        {tourStep !== null && mode !== 'internal' && (
+          <div className="sm:hidden">
+            <ExplorerTour
+              step={tourStep}
+              onStep={setTourStep}
+              onClose={closeTour}
+              placement="inline"
+            />
+          </div>
+        )}
 
         <aside
           ref={inspectorRef}
