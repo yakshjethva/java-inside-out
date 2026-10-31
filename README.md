@@ -1,8 +1,8 @@
-# Inside Java
+# JVM Atlas
 
 **Understand Java from the inside out.**
 
-Inside Java is an open-source, interactive way to learn what happens inside Java. Beginners start
+JVM Atlas is an open-source, interactive way to learn what happens inside the Java Virtual Machine. Beginners start
 with one question, "What happens when you run a Java program?", and follow a single line of Java
 from source code to the processor. Experienced developers open the same machine as a technical
 plate of the JVM, where every part is a real component they can select, inspect, take apart and
@@ -211,5 +211,5 @@ structured and what a pull request needs.
 The code and content are released under the [MIT License](LICENSE). Bundled fonts and libraries
 keep their own licences; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-Java and OpenJDK are trademarks or registered trademarks of Oracle and/or its affiliates. Inside
-Java is an independent educational project and is not affiliated with or endorsed by Oracle.
+JVM Atlas is an independent educational project and is not affiliated with or endorsed by Oracle.
+Java and OpenJDK are trademarks or registered trademarks of Oracle and/or its affiliates.

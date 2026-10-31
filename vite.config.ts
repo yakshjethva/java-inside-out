@@ -29,7 +29,7 @@ const PRECACHED_FONT = /-latin-[a-z]+-normal-[\w-]+\.woff2$/;
 function githubPagesOutput(): Plugin {
   let outDir = path.join(root, 'dist');
   return {
-    name: 'inside-java:github-pages-output',
+    name: 'jvm-atlas:static-output',
     apply: 'build',
     configResolved(config) {
       outDir = path.resolve(config.root, config.build.outDir);
@@ -44,7 +44,7 @@ function githubPagesOutput(): Plugin {
         fs.mkdirSync(dir, { recursive: true });
         const titled = html.replace(
           /<title>[^<]*<\/title>/,
-          `<title>${route.title} · Inside Java</title>`,
+          `<title>${route.title} · JVM Atlas</title>`,
         );
         fs.writeFileSync(path.join(dir, 'index.html'), titled);
       }

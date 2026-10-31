@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import { MORE_NAV, PRIMARY_NAV, SITE } from '@/data/site';
 import { cn } from '@/lib/cn';
-import { LogoMark } from './Logo';
+import { LogoMark, Wordmark } from './Logo';
 import { SettingsMenu } from './SettingsMenu';
 
 export function SiteHeader() {
@@ -28,9 +28,7 @@ export function SiteHeader() {
           aria-label={`${SITE.name}, home`}
         >
           <LogoMark />
-          <span className="font-serif text-[19px] leading-none tracking-tight">
-            Inside <span className="text-rt-300 italic">Java</span>
-          </span>
+          <Wordmark />
         </Link>
 
         <nav aria-label="Primary" className="ml-4 hidden items-center gap-1 lg:flex">

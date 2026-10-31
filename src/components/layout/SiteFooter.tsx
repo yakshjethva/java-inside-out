@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { MORE_NAV, PRIMARY_NAV, SITE } from '@/data/site';
-import { LogoMark } from './Logo';
+import { LogoMark, Wordmark } from './Logo';
 
 export function SiteFooter() {
   return (
@@ -9,16 +9,18 @@ export function SiteFooter() {
         <div>
           <div className="flex items-center gap-2.5">
             <LogoMark size={22} />
-            <span className="font-serif text-lg text-fg">Inside Java</span>
+            <Wordmark className="text-[17px] text-fg" />
           </div>
           <p className="mt-2 max-w-md text-[13.5px] text-fg-muted">
-            {SITE.tagline} A free, open-source way to see what happens inside Java programs.
-            Specification baseline: {SITE.specVersion}. Implementation details:{' '}
-            {SITE.implementationVersion}.
+            {SITE.tagline} A free, open-source atlas of the Java Virtual Machine. Specification
+            baseline: {SITE.specVersion}. Implementation details: {SITE.implementationVersion}.
           </p>
           <p className="mt-3 text-[12.5px] text-fg-subtle">
             MIT licensed · no accounts, no tracking, no backend · your progress stays in your
             browser.
+          </p>
+          <p className="mt-3 max-w-md text-[12px] text-fg-subtle">
+            {SITE.independence} {SITE.trademarks}
           </p>
         </div>
         <nav aria-label="Footer: learn">

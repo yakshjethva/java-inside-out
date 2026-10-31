@@ -1,4 +1,4 @@
-# Inside Java — implementation plan
+# JVM Atlas — implementation plan
 
 > Understand Java from the inside out.
 
@@ -13,7 +13,7 @@ The repository started with only an MIT `LICENSE` and a one-line `README.md`. Ev
 
 ## 1. Product architecture
 
-Inside Java is a **static single-page application**. There is no server, database, account system or
+JVM Atlas is a **static single-page application**. There is no server, database, account system or
 external API. Everything the learner sees is compiled into the bundle and served by GitHub Pages.
 
 ```

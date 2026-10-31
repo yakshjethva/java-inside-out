@@ -7,6 +7,7 @@
  * the site to work: persistence is a convenience.
  */
 
+// The pre-rename prefix stays: changing it would silently reset every learner's saved data.
 const PREFIX = 'inside-java:v1:';
 
 /**

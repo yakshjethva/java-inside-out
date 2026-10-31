@@ -51,7 +51,7 @@ export function ReferencesPage() {
     <>
       <PageHeader kicker="Sources" title="References">
         <p>
-          Every technically important claim in Inside Java cites one of these {REFERENCE_IDS.length}{' '}
+          Every technically important claim in JVM Atlas cites one of these {REFERENCE_IDS.length}{' '}
           sources. Specifications are Java SE 25; implementation details are OpenJDK HotSpot, JDK
           25. Examples were run with OpenJDK 25.0.4 on Linux x64.
         </p>

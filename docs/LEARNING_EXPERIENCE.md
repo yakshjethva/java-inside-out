@@ -2,7 +2,7 @@
 
 **One machine. One source of truth. Multiple levels of understanding.**
 
-This document describes how Inside Java teaches: the navigation, the first lesson, how the JVM
+This document describes how JVM Atlas teaches: the navigation, the first lesson, how the JVM
 explorer is entered, how the inspector discloses depth, and the three explanation levels. It
 complements [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), which covers the technical
 architecture and milestones.
@@ -38,7 +38,7 @@ too much too early:
 ## 3. Navigation
 
 ```text
-Inside Java   [Start here] [Learn] [Explore the JVM] [Glossary] [More ▾]      (level) (menu)
+JVM Atlas     [Start here] [Learn] [Explore the JVM] [Glossary] [More ▾]      (level) (menu)
                                                                └ References
                                                                  About
                                                                  Contributing

@@ -1,8 +1,8 @@
-# Inside Java
+# JVM Atlas
 
 **Understand Java from the inside out.**
 
-Inside Java is an open-source, interactive learning site about Java and JVM internals. It teaches
+JVM Atlas is an open-source, interactive learning site about Java and JVM internals. It teaches
 one machine at several depths: a beginner follows a single line of Java from source code to the
 CPU, and an engineer opens the same machine as a 66-component technical plate with HotSpot
 structures, verified bytecode and primary sources.

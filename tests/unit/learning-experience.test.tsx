@@ -151,12 +151,12 @@ describe('page titles', () => {
     const staticTitle = indexHtml.match(/<title>([^<]*)<\/title>/)![1];
     render(<Titled />);
     expect(document.title).toBe(staticTitle);
-    expect(document.title).toBe('Inside Java · Understand Java from the inside out');
+    expect(document.title).toBe('JVM Atlas · Explore the machine behind Java programs');
   });
 
   it('name the page first everywhere else', () => {
     render(<Titled title="Glossary" />);
-    expect(document.title).toBe('Glossary · Inside Java');
+    expect(document.title).toBe('Glossary · JVM Atlas');
   });
 });
 

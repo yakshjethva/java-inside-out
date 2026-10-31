@@ -401,7 +401,7 @@ export function HomePage() {
             )}
           </div>
           <WhenNearViewport
-            className="h-[340px] overflow-hidden rounded-2xl border border-ink-600 bg-ink-950 sm:h-[460px]"
+            className="surface-instrument h-[340px] overflow-hidden rounded-2xl border border-ink-600 bg-ink-950 sm:h-[460px]"
             fallback={MAP_FALLBACK}
           >
             <Suspense fallback={MAP_FALLBACK}>

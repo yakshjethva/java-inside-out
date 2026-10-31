@@ -111,7 +111,10 @@ export function CodeBlock({
 
   return (
     <figure
-      className={cn('overflow-hidden rounded-md border border-ink-600 bg-ink-900', className)}
+      className={cn(
+        'surface-instrument overflow-hidden rounded-md border border-ink-600 bg-ink-900',
+        className,
+      )}
     >
       <figcaption className="flex items-center justify-between gap-2 border-b border-ink-700 bg-ink-850 px-3 py-1.5">
         <span className="truncate text-[12.5px] text-fg-muted">

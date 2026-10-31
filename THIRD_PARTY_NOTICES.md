@@ -1,6 +1,6 @@
 # Third-party notices
 
-Inside Java's own code and content are released under the [MIT License](LICENSE). The published
+JVM Atlas's own code and content are released under the [MIT License](LICENSE). The published
 site is built from the third-party fonts and runtime packages below (the bundler leaves out code
 that is not used). Each package ships its full licence text, which you will find in
 `node_modules` after `npm ci`.
@@ -43,7 +43,7 @@ published stylesheet.
 
 ## Specifications and sources
 
-Inside Java quotes and paraphrases short passages of the Java Language Specification, the Java
+JVM Atlas quotes and paraphrases short passages of the Java Language Specification, the Java
 Virtual Machine Specification, the Java SE API documentation, JDK Enhancement Proposals and the
 OpenJDK source code for the purpose of explanation, always with a link to the source. These
 documents remain the property of their owners. Java and OpenJDK are trademarks or registered

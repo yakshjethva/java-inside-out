@@ -30,7 +30,7 @@ test.describe('GitHub Pages deployment', () => {
 
     const response = await page.goto('./');
     expect(response?.status()).toBe(200);
-    await expect(page).toHaveTitle('Inside Java · Understand Java from the inside out');
+    await expect(page).toHaveTitle('JVM Atlas · Explore the machine behind Java programs');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Ever wondered what happens when you run Java code?',
     );
@@ -69,7 +69,7 @@ test.describe('GitHub Pages deployment', () => {
     const response = await page.goto('anatomy?c=heap');
     expect(response?.status()).toBe(200);
     await expect(page).toHaveURL(/\/anatomy\/?\?c=heap$/);
-    await expect(page).toHaveTitle('Explore the JVM · Inside Java');
+    await expect(page).toHaveTitle('Explore the JVM · JVM Atlas');
     await expect(page.getByRole('heading', { level: 2, name: 'Heap', exact: true })).toBeVisible();
   });
 
@@ -101,7 +101,7 @@ test.describe('navigation', () => {
       const nav = page.getByRole('navigation', { name: isMobile ? 'Mobile' : 'Primary' });
       await nav.getByRole('link', { name: new RegExp(`^${label}`) }).click();
       await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
-      await expect(page).toHaveTitle(`${title} · Inside Java`);
+      await expect(page).toHaveTitle(`${title} · JVM Atlas`);
     }
     expect(problems).toEqual([]);
   });
@@ -135,7 +135,7 @@ test.describe('navigation', () => {
     await page.goto('./');
     const footer = page.getByRole('contentinfo');
     await footer.getByRole('link', { name: 'About', exact: true }).click();
-    await expect(page).toHaveTitle('About · Inside Java');
+    await expect(page).toHaveTitle('About · JVM Atlas');
     await page.getByRole('contentinfo').getByRole('link', { name: 'Contributing' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Contributing' })).toBeVisible();
   });

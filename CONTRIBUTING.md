@@ -1,6 +1,6 @@
-# Contributing to Inside Java
+# Contributing to JVM Atlas
 
-Thank you for helping. Inside Java grows one verified explanation at a time: you can fix an
+Thank you for helping. JVM Atlas grows one verified explanation at a time: you can fix an
 error, sharpen an explanation, add a glossary term, improve accessibility, or build the next
 laboratory. This guide explains how the project is organised and what a pull request needs.
 

@@ -613,7 +613,7 @@ export function AnatomyExplorer() {
         <div
           ref={canvasAreaRef}
           className={cn(
-            'relative min-w-0 xl:h-auto xl:flex-1',
+            'surface-instrument relative min-w-0 bg-ink-950 xl:h-auto xl:flex-1',
             overview ? 'h-[46vh] min-h-[300px]' : 'h-[62vh] min-h-[380px]',
           )}
         >

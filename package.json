@@ -1,8 +1,8 @@
 {
-  "name": "inside-java",
+  "name": "jvm-atlas",
   "private": true,
   "version": "0.2.0",
-  "description": "Inside Java: understand Java from the inside out. An open-source, interactive atlas of JVM internals.",
+  "description": "JVM Atlas: explore the machine behind Java programs. An independent, interactive atlas of the Java Virtual Machine.",
   "license": "MIT",
   "type": "module",
   "engines": {
